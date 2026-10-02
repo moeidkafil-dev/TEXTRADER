@@ -1,4 +1,4 @@
-# textrader 2.0.1 — Product Release Notes
+# TEXTRADER X 3.0.0 — Product Release Notes
 
 ## Product surface added
 
@@ -74,3 +74,11 @@ adapter endpoint is unavailable. The CLI now reports such failures cleanly.
 Paper/mock execution remains the default. The existing fail-closed risk engine,
 execution guard and final kill-switch check remain in the path. Adding the
 product surface does not bypass the safety core.
+
+## X architecture
+
+3.0.0 adds portfolio-aware position sizing, a supervisory trade-thesis layer, auditable knowledge-source registry, optional research search, and performance metrics. The LLM remains advisory: deterministic risk and execution guards retain final authority.
+
+## Profitability claim
+
+This release makes no guarantee of profitability. The validation artifact intentionally separates software correctness from trading performance and requires out-of-sample, paper and testnet validation before live use.

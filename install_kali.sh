@@ -8,9 +8,9 @@ PYTHON_BIN="${PYTHON_BIN:-python3}"
 source .venv/bin/activate
 
 python -m pip install --upgrade pip
-python -m pip install -e ".[dev]"
+python -m pip install -e ".[dev,live]"
 
-printf '\ntextrader 2.0.1 installed successfully.\n'
+printf '\nTEXTRADER X 3.0.0 installed successfully.\n'
 printf 'Activate with:\n  source .venv/bin/activate\n'
 printf 'Then run:\n'
 printf '  textrader doctor\n'

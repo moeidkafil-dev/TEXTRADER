@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: textrader
-Version: 2.0.1
+Version: 3.0.0
 Summary: textrader — production trading runtime with real market data, CLI, web control center and fail-closed execution
 License: Proprietary
 Requires-Python: >=3.10

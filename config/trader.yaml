@@ -12,6 +12,10 @@ trader:
   broker: mock                         # mock | alpaca | binance | ...
 
   initial_equity: 100000.0
+  risk_fraction_per_trade: 0.005
+  max_trade_exposure: 0.10
+  research_enabled: true
+  search_provider: env:TEXTRADER_SEARCH_URL
   data_sources:
     - "mock://ohlcv"
   instruments:

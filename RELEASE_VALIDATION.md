@@ -1,6 +1,6 @@
-# textrader — Release 2.0.1 Validation
+# TEXTRADER X — Release 3.0.0 Validation
 
-Date: 2026-09-25
+Date: 2026-09-26
 
 ## Automated test suite
 
@@ -86,3 +86,11 @@ methodology.
 - Real Binance network call from build sandbox: **NOT AVAILABLE** because the
   sandbox has no DNS/network access. The adapter returns a clean actionable
   error instead of a raw stack trace.
+
+
+## 3.0.0 additional checks
+
+- Full suite after redesign: **81 passed**.
+- Dynamic position sizing smoke test: **PASS**; sample paper cycle produced a portfolio-aware quantity instead of fixed size 1.0.
+- Research command: **PASS**; when no search provider is configured it explicitly reports `searched=false` and returns a source registry rather than fabricating results.
+- Real Binance network call from the builder: **BLOCKED by builder DNS**; the adapter returned a clean error. This does not verify exchange reachability from the user's machine.

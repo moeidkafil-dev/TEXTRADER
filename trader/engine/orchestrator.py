@@ -163,9 +163,12 @@ class Orchestrator:
 
         # Decision / Risk / Guard / Broker / Final tools
         self.decision_engine = DecisionEngine(observability=self.obs,
-                                                default_size=1.0,
+                                                default_size=None,
                                                 sl_pct=0.01,
-                                                tp_pct=0.02)
+                                                tp_pct=0.02,
+                                                risk_config=self.rc,
+                                                risk_fraction=0.005,
+                                                max_exposure_fraction=min(0.10, self.rc.max_portfolio_exposure))
         self.validator = DecisionValidator(self.rc, observability=self.obs)
         self.risk_engine = RiskEngine(self.rc, observability=self.obs,
                                        kill_switch=self.kill_switch)
@@ -288,7 +291,8 @@ class Orchestrator:
 
         # ---- CONTEXTING ----
         prev = repo.list_decisions(self.db, cid)
-        ctx = self.context_maker.make(cid, bundles, previous_decisions=prev)
+        portfolio_state = repo.latest_portfolio_state(self.db) or {"equity": self.tc.initial_equity, "cash": self.tc.initial_equity, "positions": {}}
+        ctx = self.context_maker.make(cid, bundles, previous_decisions=prev, market_state=portfolio_state)
         repo.insert_context(self.db, ctx)
         self._audit(cid, "context_maker", "make", {"context_id": ctx.context_id, "hash": ctx.hash})
         # Deliver to agent1 (REQ-DR-04)

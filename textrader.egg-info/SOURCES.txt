@@ -12,6 +12,7 @@ tests/test_reeval_regression.py
 tests/test_release_regressions.py
 tests/test_risk_engine.py
 tests/test_system.py
+tests/test_v3_sizing.py
 textrader.egg-info/PKG-INFO
 textrader.egg-info/SOURCES.txt
 textrader.egg-info/dependency_links.txt
@@ -20,6 +21,8 @@ textrader.egg-info/requires.txt
 textrader.egg-info/top_level.txt
 trader/__init__.py
 trader/cli.py
+trader/knowledge.py
+trader/research.py
 trader/adapters/__init__.py
 trader/adapters/llm.py
 trader/adapters/broker/__init__.py
@@ -44,6 +47,7 @@ trader/scripts/__init__.py
 trader/scripts/run_backtest.py
 trader/scripts/run_demo.py
 trader/scripts/run_paper.py
+trader/scripts/run_research.py
 trader/services/__init__.py
 trader/services/agent1.py
 trader/services/agent2.py
@@ -57,8 +61,11 @@ trader/services/execution_guard.py
 trader/services/final_tools.py
 trader/services/kill_switch.py
 trader/services/message_service.py
+trader/services/metrics.py
 trader/services/observability.py
+trader/services/position_sizer.py
 trader/services/risk_engine.py
+trader/services/super_agent.py
 trader/storage/__init__.py
 trader/storage/connection.py
 trader/storage/repo.py

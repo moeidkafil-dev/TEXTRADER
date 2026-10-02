@@ -101,6 +101,12 @@ def cmd_backtest(args):
     return 0
 
 
+def cmd_research(args):
+    from trader.research import ResearchEngine
+    _pretty(ResearchEngine().search(args.query))
+    return 0
+
+
 def cmd_kill(args):
     o = _build_orchestrator(args)
     if args.action == "on":
@@ -112,8 +118,8 @@ def cmd_kill(args):
 
 
 def build_parser():
-    p = argparse.ArgumentParser(prog="textrader", description="textrader production CLI")
-    p.add_argument("--version", action="version", version="textrader 2.0.1")
+    p = argparse.ArgumentParser(prog="textrader", description="TEXTRADER X autonomous trading runtime")
+    p.add_argument("--version", action="version", version="textrader 3.0.0")
     p.add_argument("--config", help="trader.yaml path")
     p.add_argument("--risk", help="risk.yaml path")
     sp = p.add_subparsers(dest="command", required=True)
@@ -143,6 +149,10 @@ def build_parser():
     b = sp.add_parser("backtest", help="run deterministic historical replay")
     b.add_argument("--bars", type=int, default=1000)
     b.set_defaults(func=cmd_backtest)
+
+    rs = sp.add_parser("research", help="run auditable knowledge research/search")
+    rs.add_argument("query", nargs="?", default="trading risk management")
+    rs.set_defaults(func=cmd_research)
 
     k = sp.add_parser("kill-switch", help="activate/resume the safety halt")
     k.add_argument("action", choices=["on", "off"])

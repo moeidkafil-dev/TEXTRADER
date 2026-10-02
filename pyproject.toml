@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "textrader"
-version = "2.0.1"
+version = "3.0.0"
 description = "textrader — production trading runtime with real market data, CLI, web control center and fail-closed execution"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -26,6 +26,7 @@ live = [
 trader-paper = "trader.scripts.run_paper:main"
 trader-backtest = "trader.scripts.run_backtest:main"
 trader-demo = "trader.scripts.run_demo:main"
+trader-research = "trader.scripts.run_research:main"
 textrader = "trader.cli:main"
 
 [tool.setuptools.packages.find]
