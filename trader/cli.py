@@ -117,9 +117,23 @@ def cmd_kill(args):
     return 0
 
 
+def cmd_ingest(args):
+    from trader.web.server import AnalyzeRequest, ManualDataRequest, _bundles_from_manual, ControlPlane
+    try:
+        payload = json.loads(Path(args.input).read_text(encoding="utf-8"))
+        data = ManualDataRequest(**payload)
+        req = AnalyzeRequest(symbol=data.symbol, source="manual", mode="paper")
+        result = ControlPlane(data.symbol).analyze(req, _bundles_from_manual(data))
+        _pretty(result)
+        return 0 if not result.get("errors") else 1
+    except Exception as e:
+        print(f"ERROR: manual ingestion failed: {e}", file=sys.stderr)
+        return 2
+
+
 def build_parser():
     p = argparse.ArgumentParser(prog="textrader", description="TEXTRADER X autonomous trading runtime")
-    p.add_argument("--version", action="version", version="textrader 3.0.0")
+    p.add_argument("--version", action="version", version="textrader 3.1.0")
     p.add_argument("--config", help="trader.yaml path")
     p.add_argument("--risk", help="risk.yaml path")
     sp = p.add_subparsers(dest="command", required=True)
@@ -158,6 +172,10 @@ def build_parser():
     k.add_argument("action", choices=["on", "off"])
     k.add_argument("--reason", default="manual")
     k.set_defaults(func=cmd_kill)
+
+    mi = sp.add_parser("ingest", help="analyze a normalized/manual market JSON snapshot")
+    mi.add_argument("input", help="JSON file containing open/high/low/close and portfolio fields")
+    mi.set_defaults(func=cmd_ingest)
 
     w = sp.add_parser("web", help="start local web dashboard")
     w.add_argument("--host", default="127.0.0.1")

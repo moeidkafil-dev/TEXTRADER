@@ -13,6 +13,7 @@ tests/test_release_regressions.py
 tests/test_risk_engine.py
 tests/test_system.py
 tests/test_v3_sizing.py
+tests/test_web_control_plane.py
 textrader.egg-info/PKG-INFO
 textrader.egg-info/SOURCES.txt
 textrader.egg-info/dependency_links.txt
