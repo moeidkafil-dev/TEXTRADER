@@ -15,7 +15,7 @@ from typing import Any
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict, model_validator, field_validator
 
 from trader.core.config import load_risk_config, load_trader_config
 from trader.core.schemas import DataBundle
@@ -46,38 +46,135 @@ class AnalyzeRequest(BaseModel):
 
 
 class ManualDataRequest(BaseModel):
+    """Professional manual market snapshot.
+
+    The flat OHLCV/account fields remain backwards compatible with v3.1.x.
+    Advanced sections are optional and are preserved as auditable bundles.
+    """
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: str = "1.0"
+    snapshot_id: str | None = None
     symbol: str = "BTC/USDT"
+    exchange: str = "manual"
     timestamp: str | None = None
+    timeframe: str = "1m"
+
     price: float | None = None
     open: float
     high: float
     low: float
     close: float
     volume: float = 0.0
+
     order_book: dict[str, Any] | None = None
-    news: list[str] = []
+    trades: dict[str, Any] | None = None
+    derivatives: dict[str, Any] | None = None
+    volatility: dict[str, Any] | None = None
+    technical: dict[str, Any] | None = None
     sentiment: float = 0.0
+    sentiment_detail: dict[str, Any] | None = None
+    news: list[Any] = Field(default_factory=list)
+    macro: dict[str, Any] | None = None
+    onchain: dict[str, Any] | None = None
+
     equity: float = 100000.0
     cash: float = 100000.0
-    positions: dict[str, Any] = {}
+    positions: dict[str, Any] = Field(default_factory=dict)
+    risk_limits: dict[str, Any] | None = None
+    execution: dict[str, Any] | None = None
+    data_quality: dict[str, Any] | None = None
+    agent_context: dict[str, Any] | None = None
+
+    @field_validator("timestamp")
+    @classmethod
+    def validate_timestamp(cls, value):
+        if value:
+            try:
+                parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+                if parsed.tzinfo is None:
+                    parsed = parsed.replace(tzinfo=timezone.utc)
+            except ValueError as exc:
+                raise ValueError("timestamp must be ISO-8601") from exc
+        return value
+
+    @model_validator(mode="after")
+    def validate_snapshot(self):
+        import math
+        nums = {"open": self.open, "high": self.high, "low": self.low,
+                "close": self.close, "volume": self.volume, "sentiment": self.sentiment,
+                "equity": self.equity, "cash": self.cash}
+        if self.price is not None:
+            nums["price"] = self.price
+        for name, value in nums.items():
+            if not math.isfinite(value):
+                raise ValueError(f"{name} must be finite")
+        if self.high < max(self.open, self.close):
+            raise ValueError("high must be >= open and close")
+        if self.low > min(self.open, self.close):
+            raise ValueError("low must be <= open and close")
+        if self.volume < 0:
+            raise ValueError("volume must be >= 0")
+        if self.equity <= 0:
+            raise ValueError("equity must be > 0")
+        if self.cash < 0:
+            raise ValueError("cash must be >= 0")
+        if self.order_book:
+            bids = self.order_book.get("bids", []) or []
+            asks = self.order_book.get("asks", []) or []
+            if not isinstance(bids, list) or not isinstance(asks, list):
+                raise ValueError("order_book bids and asks must be arrays")
+            for side_name, levels in (("bids", bids), ("asks", asks)):
+                for level in levels:
+                    if not isinstance(level, (list, tuple)) or len(level) < 2:
+                        raise ValueError(f"order_book {side_name} levels must be [price, size]")
+                    price, size = float(level[0]), float(level[1])
+                    if not math.isfinite(price) or not math.isfinite(size) or price <= 0 or size < 0:
+                        raise ValueError(f"order_book {side_name} contains invalid price/size")
+            if bids and asks:
+                best_bid = float(bids[0][0])
+                best_ask = float(asks[0][0])
+                if best_bid > best_ask:
+                    raise ValueError("order_book best bid cannot exceed best ask")
+        if self.data_quality and self.data_quality.get("completeness") is not None:
+            completeness = float(self.data_quality["completeness"])
+            if not 0 <= completeness <= 1:
+                raise ValueError("data_quality.completeness must be between 0 and 1")
+        return self
 
 
 def _bundles_from_manual(d: ManualDataRequest) -> list[DataBundle]:
     ts = datetime.fromisoformat(d.timestamp.replace("Z", "+00:00")) if d.timestamp else datetime.now(timezone.utc)
+    if ts.tzinfo is None:
+        ts = ts.replace(tzinfo=timezone.utc)
+    instrument = d.symbol.upper().replace("-", "/")
+    bundles: list[DataBundle] = []
+
+    def add(source: str, payload: dict[str, Any], quality: str = "ok") -> None:
+        bundles.append(DataBundle(source=source, timestamp=ts, quality=quality,
+                                   payload=payload, hash=sha256_of(payload)))
+
     ohlcv = {"open": d.open, "high": d.high, "low": d.low, "close": d.close, "volume": d.volume}
-    bundles = [DataBundle(source="manual://ohlcv", timestamp=ts, quality="ok",
-                          payload={"instrument": d.symbol.upper().replace("-", "/"), "ohlcv": ohlcv},
-                          hash=sha256_of(ohlcv))]
-    if d.order_book:
-        payload = {"instrument": d.symbol.upper().replace("-", "/"), "order_book": d.order_book}
-        bundles.append(DataBundle(source="manual://orderbook", timestamp=ts, quality="ok",
-                                  payload=payload, hash=sha256_of(payload)))
-    payload = {"headlines": d.news, "sentiment": d.sentiment}
-    bundles.append(DataBundle(source="manual://news", timestamp=ts, quality="ok",
-                              payload=payload, hash=sha256_of(payload)))
-    payload = {"cash": d.cash, "positions": d.positions, "equity": d.equity}
-    bundles.append(DataBundle(source="manual://portfolio", timestamp=ts, quality="ok",
-                              payload=payload, hash=sha256_of(payload)))
+    if d.price is not None:
+        ohlcv["price"] = d.price
+    add("manual://ohlcv", {"instrument": instrument, "ohlcv": ohlcv,
+                            "exchange": d.exchange, "timeframe": d.timeframe})
+
+    sections = {
+        "orderbook": d.order_book, "trades": d.trades, "derivatives": d.derivatives,
+        "volatility": d.volatility, "technical": d.technical, "macro": d.macro,
+        "onchain": d.onchain, "execution": d.execution, "risk_limits": d.risk_limits,
+        "data_quality": d.data_quality, "agent_context": d.agent_context,
+    }
+    for name, value in sections.items():
+        if value is not None:
+            payload_name = "order_book" if name == "orderbook" else name
+            add(f"manual://{name}", {"instrument": instrument, payload_name: value})
+
+    add("manual://news", {"instrument": instrument, "headlines": d.news,
+                           "sentiment": d.sentiment, "sentiment_detail": d.sentiment_detail})
+    add("manual://portfolio", {"instrument": instrument, "cash": d.cash,
+                                "positions": d.positions, "equity": d.equity})
     return bundles
 
 
@@ -116,7 +213,7 @@ class ControlPlane:
 
 
 def create_app(default_symbol: str = "BTC/USDT") -> FastAPI:
-    app = FastAPI(title="TEXTRADER X Control Plane", version="3.1.1",
+    app = FastAPI(title="TEXTRADER X Control Plane", version="3.2.0",
                   description="Auditable admin/control plane for autonomous trading analysis.")
     app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
     cp = ControlPlane(default_symbol)

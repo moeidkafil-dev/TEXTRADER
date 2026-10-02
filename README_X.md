@@ -1,4 +1,4 @@
-# TEXTRADER X 3.1.1
+# TEXTRADER X 3.0.0
 
 Autonomous, fail-closed trading runtime built around specialist agents, deterministic risk, portfolio-aware sizing, auditable research, paper execution and optional exchange adapters.
 

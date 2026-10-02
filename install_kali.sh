@@ -10,7 +10,7 @@ source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -e ".[dev,live]"
 
-printf '\nTEXTRADER X 3.1.1 installed successfully.\n'
+printf '\nTEXTRADER X 3.2.0 installed successfully.\n'
 printf 'Activate with:\n  source .venv/bin/activate\n'
 printf 'Then run:\n'
 printf '  textrader doctor\n'

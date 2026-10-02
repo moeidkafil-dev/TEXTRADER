@@ -3,6 +3,7 @@
 <title>TEXTRADER X — Intelligence Control Center</title>
 <style>
 :root{--bg:#06090f;--panel:#0b111b;--panel2:#101827;--line:#1b2a3d;--text:#edf4fb;--muted:#8292a7;--cyan:#57d7ff;--green:#35e6a1;--red:#ff6b7a;--amber:#ffca66;--violet:#a88bff}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 20% -10%,#11233a 0,#06090f 38%);color:var(--text);font:14px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,sans-serif}.top{height:72px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;background:#06090fe8;backdrop-filter:blur(18px);z-index:20}.brand{font-weight:900;letter-spacing:.16em}.brand small{display:block;color:var(--muted);font-size:9px;letter-spacing:.22em;margin-top:-2px}.live{display:flex;gap:12px;align-items:center}.dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 14px var(--green)}.layout{display:grid;grid-template-columns:240px 1fr;min-height:calc(100vh - 72px)}aside{border-right:1px solid var(--line);padding:20px 14px}.nav{display:grid;gap:6px}.nav button{text-align:left;border:1px solid transparent;background:transparent;color:var(--muted);padding:11px 12px;border-radius:9px;cursor:pointer}.nav button.active,.nav button:hover{background:var(--panel2);color:var(--text);border-color:var(--line)}main{padding:24px;max-width:1800px;width:100%;margin:auto}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}input,select,button{background:#0b121d;border:1px solid var(--line);color:var(--text);border-radius:8px;padding:10px 12px}button{cursor:pointer}.primary{border-color:#2b86a5;background:#0d2632}.danger{border-color:#5b2029;background:#291015;color:#ff9da8}.cards{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}.card,.panel{background:linear-gradient(180deg,#0c131e,#09101a);border:1px solid var(--line);border-radius:13px;box-shadow:0 18px 55px #0005}.card{padding:15px}.label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}.value{font-size:22px;font-weight:800;margin-top:4px}.green{color:var(--green)}.red{color:var(--red)}.amber{color:var(--amber)}.cyan{color:var(--cyan)}.content{margin-top:14px;display:grid;grid-template-columns:1.5fr 1fr;gap:14px}.panel{padding:18px}.panel h3{margin:0 0 13px;font-size:13px;letter-spacing:.08em}.chart{height:310px;width:100%}.decision{font-size:42px;font-weight:950;letter-spacing:.03em}.sub{color:var(--muted)}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.metric{padding:12px;background:#0a111b;border:1px solid #172638;border-radius:9px}.pipeline{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.stage{position:relative;padding:13px 10px;border:1px solid var(--line);background:#0b121c;border-radius:9px}.stage:after{content:'→';position:absolute;right:-8px;top:35%;color:#3d536b}.stage:last-child:after{display:none}.stage b{display:block;font-size:11px}.stage span{font-size:10px;color:var(--muted)}.stage.ok{border-color:#1b6d55}.stage.block{border-color:#71313b}.table{width:100%;border-collapse:collapse}.table th,.table td{text-align:left;padding:9px;border-bottom:1px solid var(--line);font-size:12px}.table th{color:var(--muted);font-weight:600}.pill{border:1px solid var(--line);border-radius:999px;padding:3px 8px;font-size:10px}.json{white-space:pre-wrap;max-height:430px;overflow:auto;color:#b8c8d8;font:11px/1.55 ui-monospace,monospace}.hidden{display:none}.section{margin-top:14px}.sidebar-title{color:var(--muted);font-size:10px;letter-spacing:.12em;margin:22px 12px 8px}@media(max-width:1100px){.layout{grid-template-columns:1fr}aside{display:none}.cards{grid-template-columns:repeat(3,1fr)}.content{grid-template-columns:1fr}}@media(max-width:650px){main{padding:12px}.cards{grid-template-columns:repeat(2,1fr)}.pipeline{grid-template-columns:1fr}.stage:after{display:none}}
+.formgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.formgrid label,.panel>label,.grid2 label{display:grid;gap:6px;color:var(--muted);font-size:12px}.formgrid input,.formgrid select{width:100%}textarea{min-height:90px;resize:vertical;background:#070c13;color:#cfe0ee;border:1px solid var(--line);border-radius:9px;padding:10px;font:12px monospace}#manualPreview{max-height:760px;overflow:auto}.hidden{display:none!important}@media(max-width:1000px){.formgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:700px){.layout{grid-template-columns:1fr}aside{display:none}.formgrid{grid-template-columns:1fr}.cards{grid-template-columns:repeat(2,1fr)}}
 </style></head>
 <body><header class="top"><div class="brand">TEXTRADER X<small>INTELLIGENCE CONTROL CENTER</small></div><div class="live"><span class="dot"></span><span id="systemStatus">SYSTEM ONLINE</span><span id="clock" class="sub"></span></div></header>
 <div class="layout"><aside><div class="sidebar-title">CONTROL</div><div class="nav"><button class="active" onclick="view('overview',this)">◈ Overview</button><button onclick="view('decision-lab',this)">◎ Decision Lab</button><button onclick="view('ingest',this)">⇩ Data Ingestion</button><button onclick="view('runs',this)">◫ Run History</button><button onclick="view('audit',this)">⌁ Audit Trail</button><button onclick="view('risk',this)">△ Risk & Guardrails</button><button onclick="view('system',this)">⚙ System</button></div><div class="sidebar-title">SAFETY</div><button class="danger" style="width:100%" onclick="kill(true)">EMERGENCY HALT</button><button style="width:100%;margin-top:8px" onclick="kill(false)">Resume</button></aside>
@@ -11,28 +12,50 @@
 <div class="content"><div class="panel"><h3>MARKET STRUCTURE</h3><canvas class="chart" id="chart"></canvas></div><div class="panel"><h3>FINAL DECISION</h3><div class="decision" id="decisionValue">WAIT</div><div class="sub" id="reason">Run an intelligence cycle.</div><div class="grid2 section"><div class="metric"><div class="label">Regime</div><b id="regime">—</b></div><div class="metric"><div class="label">Re-evaluations</div><b id="reeval">0</b></div><div class="metric"><div class="label">Position</div><b id="position">—</b></div><div class="metric"><div class="label">SL / TP</div><b id="sltp">—</b></div></div></div></div>
 <div class="panel section"><h3>DECISION PIPELINE</h3><div class="pipeline" id="pipeline"></div></div></section>
 <section id="decision-lab" class="hidden"><div class="panel"><h3>DECISION LAB</h3><div id="decisionDetails"></div></div></section>
-<section id="ingest" class="hidden"><div class="content"><div class="panel"><h3>MANUAL MARKET INGESTION</h3><p class="sub">Paste a normalized market snapshot. It uses the exact same analysis pipeline as API market data.</p><textarea id="manualJson" style="width:100%;height:410px;background:#070c13;color:#cfe0ee;border:1px solid var(--line);border-radius:9px;padding:12px;font:12px monospace">{
-  "symbol":"BTC/USDT",
-  "open":109300,
-  "high":109600,
-  "low":109200,
-  "close":109500,
-  "volume":125.4,
-  "sentiment":0,
-  "news":[],
-  "equity":100000,
-  "cash":100000,
-  "positions":{}
-}</textarea><button class="primary" style="margin-top:10px" onclick="manualAnalyze()">Analyze Manual Snapshot</button></div><div class="panel"><h3>INPUT CONTRACT</h3><pre class="json">symbol, timestamp?
-open, high, low, close
-volume?
-order_book?
-news?
-sentiment?
-equity, cash
-positions?
-
-The server timestamps and hashes each accepted bundle for auditability.</pre></div></div></section>
+<section id="ingest" class="hidden">
+<div class="content">
+<div class="panel">
+<h3>PROFESSIONAL MANUAL MARKET SNAPSHOT</h3>
+<p class="sub">Build a validated market/account scenario without writing JSON. Advanced fields are optional and are preserved in the audit trace.</p>
+<div class="formgrid">
+<label>Symbol<input id="mSymbol" value="BTC/USDT"></label>
+<label>Exchange<input id="mExchange" value="manual"></label>
+<label>Timestamp<input id="mTimestamp" type="datetime-local"></label>
+<label>Timeframe<select id="mTimeframe"><option>1m</option><option>5m</option><option>15m</option><option>1h</option><option>4h</option><option>1d</option></select></label>
+<label>Open<input id="mOpen" type="number" step="any" value="109300"></label>
+<label>High<input id="mHigh" type="number" step="any" value="109600"></label>
+<label>Low<input id="mLow" type="number" step="any" value="109200"></label>
+<label>Close<input id="mClose" type="number" step="any" value="109500"></label>
+<label>Volume<input id="mVolume" type="number" step="any" value="125.4"></label>
+<label>Sentiment (-1..1)<input id="mSentiment" type="number" step="0.01" min="-1" max="1" value="0"></label>
+<label>Equity<input id="mEquity" type="number" step="any" value="100000"></label>
+<label>Cash<input id="mCash" type="number" step="any" value="100000"></label>
+</div>
+<div class="section"><h3>ORDER BOOK</h3><div class="grid2"><label>Bids <textarea id="mBids" placeholder="price,size&#10;109490,2.4&#10;109480,5.1">109490,2.4
+109480,5.1
+109450,8.7</textarea></label><label>Asks <textarea id="mAsks" placeholder="price,size&#10;109500,1.8&#10;109510,4.2">109500,1.8
+109510,4.2
+109550,7.9</textarea></label></div></div>
+<div class="section"><h3>DERIVATIVES & MARKET STRUCTURE</h3><div class="formgrid">
+<label>Funding Rate<input id="mFunding" type="number" step="any" value="0.0001"></label>
+<label>Open Interest<input id="mOI" type="number" step="any" value="125000000"></label>
+<label>OI Change %<input id="mOIChange" type="number" step="any" value="2.4"></label>
+<label>Long/Short Ratio<input id="mLS" type="number" step="any" value="1.12"></label>
+<label>ATR<input id="mATR" type="number" step="any" value="420"></label>
+<label>Realized Vol 1h<input id="mVol1" type="number" step="any" value="0.018"></label>
+<label>Realized Vol 24h<input id="mVol24" type="number" step="any" value="0.032"></label>
+<label>RSI 14<input id="mRSI" type="number" step="any" value="57.4"></label>
+<label>EMA 20<input id="mEMA20" type="number" step="any" value="109120"></label>
+<label>EMA 50<input id="mEMA50" type="number" step="any" value="108740"></label>
+<label>EMA 200<input id="mEMA200" type="number" step="any" value="106800"></label>
+<label>VWAP<input id="mVWAP" type="number" step="any" value="109210"></label>
+</div></div>
+<div class="section"><h3>NEWS / CONTEXT</h3><label>News headlines (one per line)<textarea id="mNews" placeholder="One headline per line"></textarea></label><label style="display:block;margin-top:10px">Operator notes<textarea id="mNotes" placeholder="Optional thesis/context/constraints"></textarea></label></div>
+<div id="manualErrors" class="metric hidden"></div>
+<div class="toolbar section"><button class="primary" onclick="validateManual()">Validate Snapshot</button><button class="primary" onclick="manualAnalyze()">Validate & Analyze</button><button onclick="copyManualJson()">Copy Generated JSON</button></div>
+</div>
+<div class="panel"><h3>GENERATED SNAPSHOT</h3><pre class="json" id="manualPreview">Build the snapshot to preview the exact payload.</pre></div>
+</div></section>
 <section id="runs" class="hidden"><div class="panel"><h3>RUN HISTORY</h3><div id="runsTable"></div></div></section>
 <section id="audit" class="hidden"><div class="panel"><h3>AUDIT / RAW TRACE</h3><pre class="json" id="raw">No cycle executed.</pre></div></section>
 <section id="risk" class="hidden"><div class="panel"><h3>RISK & GUARDRAILS</h3><div id="riskDetails"></div></div></section>
@@ -45,10 +68,27 @@ function view(id,btn){document.querySelectorAll('main>section').forEach(x=>x.cla
 function fmt(n){return n==null?'—':Number(n).toLocaleString(undefined,{maximumFractionDigits:6})}
 async function loadMarket(){try{const d=await api(`/api/market?symbol=${encodeURIComponent($('symbol').value)}&interval=${$('interval').value}&limit=120`);const t=d.ticker;$('last').textContent=fmt(t.lastPrice);$('change').textContent=fmt(t.priceChangePercent)+'%';$('change').className='value '+(Number(t.priceChangePercent)>=0?'green':'red');$('spread').textContent=fmt(t.bidPrice)+' / '+fmt(t.askPrice);draw(d.klines)}catch(e){$('system').textContent='DATA ERROR'}}
 function draw(k){const c=$('chart'),x=c.getContext('2d'),d=devicePixelRatio,w=c.clientWidth*d,h=c.clientHeight*d;c.width=w;c.height=h;x.clearRect(0,0,w,h);if(!k?.length)return;const v=k.map(z=>+z[4]),mn=Math.min(...v),mx=Math.max(...v),pad=30;const px=i=>pad+i*(w-2*pad)/(v.length-1),py=z=>h-pad-(z-mn)*(h-2*pad)/(mx-mn||1);x.strokeStyle='#57d7ff';x.lineWidth=2*d;x.beginPath();v.forEach((z,i)=>i?x.lineTo(px(i),py(z)):x.moveTo(px(i),py(z)));x.stroke()}
+function esc(v){return String(v??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]))}
 function render(r){latest=r;const f=r.final||{},o=r.order||{},risk=r.risk||{};$('decisionValue').textContent=f.decision||'WAIT';$('decisionSmall').textContent=f.decision||'WAIT';$('decisionSmall').className='value '+(f.decision==='BUY'?'green':f.decision==='SELL'?'red':'amber');$('reason').textContent=f.reason||'No final decision';$('confidence').textContent=r.initial?((f.decision==='WAIT'?0.0:0.65)*100).toFixed(0)+'%':'—';$('reeval').textContent=r.reeval_count||0;$('position').textContent=o.size?fmt(o.size)+' '+(o.instrument||''): '—';$('sltp').textContent=o.sl?fmt(o.sl)+' / '+fmt(o.tp):'—';$('riskGate').textContent=risk.passed===true?'PASS':risk.passed===false?'BLOCK':'—';$('riskGate').className='value '+(risk.passed===true?'green':risk.passed===false?'red':'amber');
-let stages=[['MARKET DATA',true,'input'],['AGENT 1',!!r.initial,r.initial?.action||''],['FAILURE ANALYSIS',!!r.failure,r.failure?.paths?.length+' checks'],['FINAL AGENT',!!r.final,f.decision||''],['ORDER / SIZING',!!r.order,o.size?'qty '+fmt(o.size):'no order'],['RISK GATE',!!r.risk,risk.passed?'PASS':'BLOCK'],['EXECUTION GUARD',r.guard_passed,r.guard_passed?'PASS':'—']];$('pipeline').innerHTML=stages.map(s=>`<div class="stage ${s[1]?'ok':'block'}"><b>${s[0]}</b><span>${s[2]}</span></div>`).join('');$('raw').textContent=JSON.stringify(r,null,2);$('decisionDetails').innerHTML=`<div class="grid2"><div class="metric"><div class="label">Initial Agent</div><b>${r.initial?.action||'—'}</b><p class="sub">${r.initial?.rationale||''}</p></div><div class="metric"><div class="label">Final Agent</div><b>${f.decision||'—'}</b><p class="sub">${f.reason||''}</p></div></div><div class="section"><h3>FAILURE PATHS</h3>${(r.failure?.paths||[]).map(p=>`<div class="metric" style="margin:6px 0"><b>${p.category}</b> · ${p.severity}<div class="sub">${p.description}</div></div>`).join('')}</div>`;$('riskDetails').innerHTML=(risk.rules||[]).map(x=>`<div class="metric" style="margin:6px 0"><b class="${x.pass?'green':'red'}">${x.pass?'PASS':'BLOCK'}</b> ${x.rule}<div class="sub">${x.reason||''}</div></div>`).join('')||'<p class="sub">No order risk evaluation was required.</p>'}
+let stages=[['MARKET DATA',true,'input'],['AGENT 1',!!r.initial,r.initial?.action||''],['FAILURE ANALYSIS',!!r.failure,r.failure?.paths?.length+' checks'],['FINAL AGENT',!!r.final,f.decision||''],['ORDER / SIZING',!!r.order,o.size?'qty '+fmt(o.size):'no order'],['RISK GATE',!!r.risk,risk.passed?'PASS':'BLOCK'],['EXECUTION GUARD',r.guard_passed,r.guard_passed?'PASS':'—']];$('pipeline').innerHTML=stages.map(s=>`<div class="stage ${s[1]?'ok':'block'}"><b>${s[0]}</b><span>${s[2]}</span></div>`).join('');$('raw').textContent=JSON.stringify(r,null,2);$('decisionDetails').innerHTML=`<div class="grid2"><div class="metric"><div class="label">Initial Agent</div><b>${esc(r.initial?.action||'—')}</b><p class="sub">${esc(r.initial?.rationale||'')}</p></div><div class="metric"><div class="label">Final Agent</div><b>${esc(f.decision||'—')}</b><p class="sub">${esc(f.reason||'')}</p></div></div><div class="section"><h3>FAILURE PATHS</h3>${(r.failure?.paths||[]).map(p=>`<div class="metric" style="margin:6px 0"><b>${esc(p.category)}</b> · ${esc(p.severity)}<div class="sub">${esc(p.description)}</div></div>`).join('')}</div>`;$('riskDetails').innerHTML=(risk.rules||[]).map(x=>`<div class="metric" style="margin:6px 0"><b class="${x.pass?'green':'red'}">${x.pass?'PASS':'BLOCK'}</b> ${esc(x.rule)}<div class="sub">${esc(x.reason||'')}</div></div>`).join('')||'<p class="sub">No order risk evaluation was required.</p>'}
 async function analyze(){try{$('decisionValue').textContent='ANALYZING…';const r=await api('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbol:$('symbol').value,source:'binance',interval:$('interval').value,limit:120,mode:'paper'})});render(r)}catch(e){$('decisionValue').textContent='ERROR';$('reason').textContent=e.message}}
-async function manualAnalyze(){try{const market=JSON.parse($('manualJson').value);const r=await api('/api/analyze/manual',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(market)});$('sourcePill').textContent='SOURCE: MANUAL';render(r);view('decision-lab',document.querySelectorAll('.nav button')[1])}catch(e){alert(e.message)}}
+function num(id){const v=Number($(id).value);return Number.isFinite(v)?v:null}
+function levels(id){return $(id).value.split('\n').map(x=>x.trim()).filter(Boolean).map((line,i)=>{const p=line.split(',').map(Number);if(p.length<2||!Number.isFinite(p[0])||!Number.isFinite(p[1]))throw Error(`Invalid order book row ${i+1} in ${id}`);return [p[0],p[1]]})}
+function buildManual(){
+  const open=num('mOpen'),high=num('mHigh'),low=num('mLow'),close=num('mClose'),volume=num('mVolume'),equity=num('mEquity'),cash=num('mCash');
+  if([open,high,low,close,volume,equity,cash].some(v=>v===null))throw Error('OHLCV and account fields must be valid numbers');
+  if(high<Math.max(open,close)||low>Math.min(open,close))throw Error('OHLC invalid: high/low do not contain open/close');
+  if(volume<0||equity<=0||cash<0)throw Error('Volume/equity/cash values are invalid');
+  const bids=levels('mBids'),asks=levels('mAsks');
+  if(bids.length&&asks.length&&bids[0][0]>asks[0][0])throw Error('Order book invalid: best bid exceeds best ask');
+  const ts=$('mTimestamp').value?new Date($('mTimestamp').value).toISOString():new Date().toISOString();
+  return {schema_version:'1.0',snapshot_id:`manual-${Date.now()}`,symbol:$('mSymbol').value.trim().toUpperCase(),exchange:$('mExchange').value.trim()||'manual',timestamp:ts,timeframe:$('mTimeframe').value,open,high,low,close,volume,order_book:{bids,asks},derivatives:{funding_rate:num('mFunding'),open_interest:num('mOI'),open_interest_change_pct:num('mOIChange'),long_short_ratio:num('mLS')},volatility:{atr:num('mATR'),realized_1h:num('mVol1'),realized_24h:num('mVol24')},technical:{rsi_14:num('mRSI'),ema:{ema_20:num('mEMA20'),ema_50:num('mEMA50'),ema_200:num('mEMA200')},vwap:num('mVWAP')},sentiment:num('mSentiment'),news:$('mNews').value.split('\n').map(x=>x.trim()).filter(Boolean),equity,cash,positions:{},agent_context:{notes:$('mNotes').value.trim()}};
+}
+function showManualError(msg){const e=$('manualErrors');e.classList.remove('hidden');e.textContent=msg}
+function validateManual(){try{const market=buildManual();$('manualPreview').textContent=JSON.stringify(market,null,2);$('manualErrors').classList.add('hidden');return market}catch(e){showManualError(e.message);return null}}
+async function manualAnalyze(){const market=validateManual();if(!market)return;try{const r=await api('/api/analyze/manual',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(market)});$('sourcePill').textContent='SOURCE: MANUAL';render(r);view('decision-lab',document.querySelectorAll('.nav button')[1])}catch(e){showManualError(e.message)}}
+async function copyManualJson(){const market=validateManual();if(!market)return;await navigator.clipboard.writeText(JSON.stringify(market,null,2))}
+
 async function loadRuns(){const d=await api('/api/runs');$('runsTable').innerHTML=`<table class="table"><tr><th>TIME</th><th>CYCLE</th><th>SYMBOL</th><th>DECISION</th><th>STATE</th><th>ERRORS</th></tr>${d.runs.map(r=>`<tr><td>${r.meta?.generated_at||''}</td><td>${r.cycle_id}</td><td>${r.meta?.symbol||''}</td><td>${r.final?.decision||'—'}</td><td>${r.final_state}</td><td>${r.errors?.length||0}</td></tr>`).join('')}</table>`}
 async function loadSystem(){const [h,c]=await Promise.all([api('/api/health'),api('/api/config')]);$('systemDetails').textContent=JSON.stringify({health:h,config:c},null,2)}
 async function kill(on){await api(on?'/api/kill-switch/on':'/api/kill-switch/off',{method:'POST'});loadSystem()}
