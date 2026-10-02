@@ -1,0 +1,8 @@
+/ 200
+/docs 200
+/openapi.json 200
+/api/health 200
+/api/modules 200
+/api/config 200
+/api/llm/providers 200
+/api/connectors 200

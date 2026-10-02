@@ -1,0 +1,26 @@
+usage: textrader [-h] [--version] [--config CONFIG] [--risk RISK]
+                 {doctor,market,analyze,paper,backtest,research,llm,connector,kill-switch,ingest,web} ...
+
+TEXTRADER X autonomous trading runtime
+
+positional arguments:
+  {doctor,market,analyze,paper,backtest,research,llm,connector,kill-switch,ingest,web}
+    doctor              validate runtime/configuration
+    market              read real public market data
+    analyze             run one XIR decision cycle
+    paper               run paper cycles
+    backtest            run deterministic historical replay
+    research            run auditable knowledge research/search
+    llm                 manage/switch the LLM provider (mock, ollama, openai,
+                        anthropic, custom)
+    connector           manage external source connectors (API key or plain
+                        URL)
+    kill-switch         activate/resume the safety halt
+    ingest              analyze a normalized/manual market JSON snapshot
+    web                 start local web dashboard
+
+options:
+  -h, --help            show this help message and exit
+  --version             show program's version number and exit
+  --config CONFIG       trader.yaml path
+  --risk RISK           risk.yaml path

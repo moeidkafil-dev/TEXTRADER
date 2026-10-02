@@ -1,0 +1,2018 @@
+کد نهایی رو دیباگ شده و تست شده اماده ی عرضه تحویل بده
+تست سنگین را روی **خود سورس همین نسخه** انجام دادم، نه صرفاً با نگاه‌کردن به ۸۷ تست. نتیجه هم چند نکته مهم پیدا کرد.
+
+## نتیجه کلی
+
+| بخش                               |                        نتیجه |
+| --------------------------------- | ---------------------------: |
+| تست‌های موجود                     |               **87/87 PASS** |
+| Coverage                          |                      **70%** |
+| فشار ترتیبی 100 چرخه              |      **100/100 کامل، 0 خطا** |
+| فشار ترتیبی 1000 چرخه             |    **1000/1000 کامل، 0 خطا** |
+| throughput در 1000 چرخه           |          **~212 چرخه/ثانیه** |
+| SQLite integrity بعد از 1000 چرخه |                       **OK** |
+| فشار 4 پردازش × 50 چرخه           |      **200/200 کامل، 0 خطا** |
+| API همزمان 20 درخواست             |    **20/20 HTTP 200، 0 خطا** |
+| Backtest 200 bar                  |                     **موفق** |
+| Paper 5 cycle                     |                     **موفق** |
+| LLM mock                          |                     **موفق** |
+| Connector lifecycle               |                     **موفق** |
+| Market API                        | gracefully failed به علت DNS |
+| Research بدون provider            |          gracefully degraded |
+| Kill-switch مستقیم Orchestrator   |                     **موفق** |
+| Orchestrator مشترک با چند Thread  |         **خراب — باگ واقعی** |
+| `textrader kill-switch on/off`    |         **خراب — باگ واقعی** |
+
+### 1. فشار 1000 چرخه
+
+سیستم را بدون توقف روی DB موقت اجرا کردم:
+
+```text
+1000 cycles
+0 result errors
+1000 completed
+212.4 cycles/sec
+SQLite integrity = ok
+DB ≈ 21.8 MB
+WAL ≈ 4.1 MB
+```
+
+یعنی از نظر **CPU/SQLite/چرخه اصلی** روی سخت‌افزار معمولی فشار خوبی تحمل می‌کند.
+
+حتی بعد از 1000 چرخه:
+
+```text
+final_state = IDLE
+```
+
+و سیستم در حالت نیمه‌کاره باقی نماند.
+
+---
+
+## 2. مهم‌ترین نکته مثبت: Risk واقعاً fail-closed است
+
+چیزی که از DB خودت فرستادی هم با تست من همخوان است.
+
+در نمونه تو:
+
+```text
+current exposure ≈ 69.85%
+new order ≈ 10%
+total ≈ 79.85%
+limit = 75%
+```
+
+و سیستم:
+
+```text
+portfolio_exposure = FAIL
+order status = rejected
+execution = null
+state = IDLE
+```
+
+یعنی مسیر:
+
+```text
+Agent 1
+  ↓
+Agent 2 / Failure Analysis
+  ↓
+Agent 3
+  ↓
+Order
+  ↓
+Validator
+  ↓
+Risk Engine
+  ↓
+REJECT
+  ↓
+NO EXECUTION
+  ↓
+IDLE
+```
+
+واقعاً اجرا شده است.
+
+این بخش از خروجی تو بسیار مهم است:
+
+```text
+risk_engine.final_check
+passed: false
+rejected: ["portfolio_exposure"]
+```
+
+پس در این سناریو، Agent نمی‌تواند Risk Engine را دور بزند.
+
+---
+
+# 3. اما یک باگ جدی پیدا کردم: Thread Safety
+
+این تست را انجام دادم:
+
+```text
+4 threads
+40 simultaneous cycles
+```
+
+نتیجه:
+
+```text
+40 requests
+0 Python exceptions
+39 cycles دارای error
+39 cycles غیر-completed
+```
+
+خطاها:
+
+```text
+Illegal transition START_CYCLE from state READING
+Illegal transition START_CYCLE from state CONTEXTING
+...
+```
+
+یعنی این:
+
+```python
+orchestrator.run_cycle()
+```
+
+برای **چند Thread همزمان روی یک Orchestrator** امن نیست.
+
+State machine یک state مشترک دارد:
+
+```text
+IDLE
+READING
+CONTEXTING
+A1
+A2
+A3
+...
+```
+
+Thread A می‌رود:
+
+```text
+IDLE → READING
+```
+
+Thread B همزمان می‌آید و می‌گوید:
+
+```text
+START_CYCLE
+```
+
+ولی سیستم دیگر `IDLE` نیست.
+
+### شدت
+
+**HIGH**
+
+چون اگر کسی مستقیماً یک Orchestrator را از چند worker همزمان صدا بزند، چرخه‌ها خراب می‌شوند.
+
+### نکته مهم
+
+Web Control Plane این مشکل را فعلاً با:
+
+```python
+with self.lock:
+```
+
+دور زده و تست API هم این را تأیید کرد:
+
+```text
+20 concurrent API requests
+20/20 = HTTP 200
+0 cycle errors
+```
+
+پس:
+
+```text
+Web → ControlPlane → lock → Orchestrator
+```
+
+فعلاً سالم است.
+
+ولی:
+
+```text
+Multiple threads → same Orchestrator
+```
+
+سالم نیست.
+
+---
+
+# 4. یک باگ دوم: CLI Kill Switch
+
+این را واقعاً اجرا کردم:
+
+```bash
+python -m trader.cli kill-switch on --reason stress
+```
+
+و شکست خورد:
+
+```text
+AttributeError:
+'Namespace' object has no attribute 'symbol'
+```
+
+مشکل در `_build_orchestrator()` است:
+
+```python
+if args.symbol:
+```
+
+ولی parser مربوط به:
+
+```text
+kill-switch
+```
+
+اصلاً `symbol` ندارد.
+
+حتی یک مشکل معماری دیگر هم دارد:
+
+```bash
+kill-switch on
+```
+
+یک Orchestrator جدید می‌سازد، Kill Switch را فعال می‌کند و process تمام می‌شود.
+
+بعد:
+
+```bash
+kill-switch off
+```
+
+یک Orchestrator جدید می‌سازد.
+
+بنابراین **Kill Switch فعلی CLI persistence واقعی بین processها ندارد**.
+
+در مقابل، Kill Switch داخل همان Orchestrator درست کار کرد:
+
+```text
+activate
+→ HALTED
+→ run_cycle = halted_at_start
+→ resume
+→ IDLE
+→ cycle works
+```
+
+پس مشکل خود مکانیزم Kill Switch نیست؛ **CLI lifecycle/persistence** مشکل دارد.
+
+---
+
+# 5. Backtest
+
+اجرا شد:
+
+```bash
+python -m trader.cli backtest --bars 200
+```
+
+نتیجه:
+
+```text
+bars_replayed = 200
+buys = 95
+sells = 84
+waits = 21
+reevals = 0
+filled = 129
+```
+
+همه چرخه‌ها در `IDLE` تمام شدند.
+
+ولی یک نکته مهم:
+
+**این نتیجه را نباید به‌عنوان اثبات سودآوری تلقی کرد.**
+
+Backtest فعلی بیشتر تست runtime/execution/state-machine است؛ هنوز یک چارچوب تحقیقاتی در حد Quant production با historical dataset واقعی، fees/slippage دقیق، walk-forward، leakage detection و benchmarkهای آماری نیست.
+
+---
+
+# 6. Coverage فقط 70% است
+
+87 تست سبز است، ولی:
+
+```text
+3113 statements
+924 missed
+70% coverage
+```
+
+چند بخش تقریباً پوشش تستی ندارند:
+
+```text
+CCXT broker              0%
+source_connector         0%
+research                  0%
+knowledge                 0%
+metrics                   0%
+paper/backtest scripts    0%
+CLI                      ~45%
+LLM adapter              ~48%
+web                      ~71%
+kill switch              ~62%
+```
+
+پس:
+
+> **87/87 PASS ≠ تمام سیستم تست شده.**
+
+این دقیقاً یکی از جاهایی است که قبلاً نباید ادعای «bug-free» می‌کردیم.
+
+---
+
+# 7. فشار Multi-Process خوب بود
+
+برخلاف Thread مشترک، این سناریو را تست کردم:
+
+```text
+Process 1 → 50 cycles
+Process 2 → 50 cycles
+Process 3 → 50 cycles
+Process 4 → 50 cycles
+```
+
+نتیجه:
+
+```text
+200 cycles
+200 completed
+0 errors
+SQLite integrity = ok
+~285 cycles/sec
+```
+
+این برای SQLite WAL روی سخت‌افزار ضعیف نتیجه خوبی است.
+
+---
+
+# 8. SQLite زیر فشار
+
+در تست 1000 چرخه:
+
+```text
+cycles              1000
+orders               577
+filled                 7
+rejected             570
+```
+
+این rejectionها عمدتاً به دلیل محدودیت‌های risk/exposure هستند، نه crash.
+
+و:
+
+```text
+PRAGMA integrity_check
+→ ok
+```
+
+یعنی corruption ندیدیم.
+
+---
+
+# 9. API
+
+20 درخواست همزمان Manual Analysis:
+
+```text
+8 workers
+20 requests
+20 × HTTP 200
+0 errors
+```
+
+بنابراین قفل موجود در:
+
+```python
+ControlPlane.lock
+```
+
+در سناریوی Web مؤثر است.
+
+---
+
+# 10. Market Data
+
+تست واقعی public market:
+
+```bash
+python -m trader.cli market BTC/USDT --interval 1m --limit 10
+```
+
+در محیط تست:
+
+```text
+Temporary failure in name resolution
+```
+
+ولی نکته مثبت این است که برنامه crash نکرد و پیام مناسب داد:
+
+```text
+ERROR: market data request failed
+Hint: verify internet/DNS access...
+```
+
+پس failure handling وجود دارد.
+
+برای محیط تو هم باید این را جداگانه با شبکه واقعی خودت تست کنیم؛ مخصوصاً چون دسترسی مستقیم به بعضی سرویس‌های خارجی ممکن است محدود باشد.
+
+---
+
+# 11. Research
+
+اجرا شد ولی:
+
+```text
+searched = false
+reason = no_search_provider_configured
+```
+
+یعنی سیستم در نبود provider به شکل کنترل‌شده fallback می‌کند، اما **Research واقعی هنوز انجام نمی‌شود**.
+
+این را باید به‌عنوان feature availability، نه bug، در نظر گرفت.
+
+---
+
+# 12. LLM
+
+Mock provider:
+
+```text
+ok = true
+provider = mock
+```
+
+Providerهای شناخته‌شده:
+
+```text
+mock
+openai
+anthropic
+ollama
+```
+
+ولی providerهای واقعی را در این تست بدون credential/network عملاً نمی‌توان اعتبارسنجی کرد.
+
+---
+
+# 13. Connector
+
+Lifecycle کامل را تست کردم:
+
+```text
+add
+ ↓
+list
+ ↓
+test
+ ↓
+remove
+ ↓
+list
+```
+
+همه operationهای مدیریتی کار کردند.
+
+Test واقعی URL به خاطر DNS شکست خورد و درست `ok=false` برگرداند.
+
+---
+
+# 14. چیزی که از DB فعلی خودت می‌بینم
+
+DB فعلی تو نشان می‌دهد pipeline واقعاً در حال کار است:
+
+```text
+Agent1
+ ↓
+Agent2
+ ↓
+Agent3
+ ↓
+Decision Validator
+ ↓
+Risk Engine
+ ↓
+State Machine
+ ↓
+Reject
+ ↓
+IDLE
+```
+
+و این قسمت خیلی مهم است:
+
+```text
+state_machine:
+RISK_CHECK → RISK_REJECT → WAITING → IDLE
+```
+
+این یعنی سفارش rejected شده ولی سیستم stuck نشده.
+
+### اما این را باید بعداً تمیز کنیم
+
+در `market_data` یک bundle داری:
+
+```text
+mock://portfolio
+cash = 100000
+positions = {}
+```
+
+در حالی که `market_state` دارد:
+
+```text
+cash ≈ 30189
+BTC notional ≈ 69810
+```
+
+این لزوماً bug محاسباتی نیست، چون Risk Engine از `portfolio_state` استفاده می‌کند؛ اما **دو منبع portfolio با تصویر متفاوت از حساب وجود دارد** و برای یک سیستم production باید provenance و source-of-truth کاملاً شفاف شود.
+
+---
+
+# جمع‌بندی واقعی
+
+در حال حاضر من سیستم را این‌طور طبقه‌بندی می‌کنم:
+
+### سبز 🟢
+
+* Core cycle
+* State machine در حالت single-thread
+* SQLite persistence
+* WAL
+* Risk Engine
+* Portfolio exposure protection
+* Execution rejection
+* Paper execution
+* Backtest runtime
+* Manual snapshot validation
+* Web Control Plane locking
+* Multi-process DB workload
+* Kill switch داخل process
+* Audit/observability
+* Idempotency architecture
+* 87 تست موجود
+
+### زرد 🟡
+
+* Coverage = 70%
+* Real LLM providers
+* Real market connectors
+* Research providers
+* CCXT live path
+* CLI edge cases
+* Portfolio source consistency
+* production-scale historical backtesting
+
+### قرمز 🔴
+
+**1. Shared Orchestrator thread safety**
+
+```text
+40 concurrent
+39 errored/incomplete
+```
+
+**2. CLI kill-switch**
+
+```text
+kill-switch on/off
+→ AttributeError
+```
+
+**3. CLI kill-switch persistence**
+
+حتی بعد از رفع `symbol`، فعال‌سازی بین processها persist نمی‌شود مگر معماری آن اصلاح شود.
+
+**4. نسخه‌ها ناسازگارند**
+
+در سورس:
+
+```text
+pyproject version = 3.2.0
+CLI --version = 4.0.0
+Web FastAPI version = 4.0.0
+```
+
+این باید یکپارچه شود.
+
+---
+
+## نتیجه نهایی من
+
+**برای فشار single-process/single-cycle و SQLite، سیستم بسیار پایدارتر از چیزی است که صرفاً از 87 تست انتظار می‌رفت.**
+
+اما من الان **اصلاً آن را production-ready یا bug-free اعلام نمی‌کنم**، چون تست فشار دقیقاً دو ایراد واقعی پیدا کرد.
+
+اولین کاری که باید انجام دهیم:
+
+```text
+1. Thread-safe کردن Orchestrator
+2. اصلاح و persistent کردن Kill Switch
+3. یکسان‌سازی version
+4. افزایش coverage مخصوصاً CLI / live adapters / research / web
+5. تست chaos و fault injection
+6. سپس stress test چند هزار/ده‌ها هزار cycle
+```
+
+و نکته مهم: **لازم نیست برای این کار سخت‌افزار قوی داشته باشی.** تست 1000 چرخه‌ای که انجام دادیم فقط حدود 4.7 ثانیه طول کشید؛ bottleneck فعلی بیشتر معماری concurrency و correctness است تا قدرت CPU.
+                                                                                                                   
+┌──(.venv)─(moeid㉿kali)-[~/Desktop/15/FINAL]
+└─$ >....                                                                                                          
+
+cat "$OUT/resource_report.txt"
+
+# ------------------------------------------------------------
+# 15. SOURCE STRUCTURE
+# ------------------------------------------------------------
+
+section "15 — SOURCE / FEATURE INVENTORY"
+
+find trader -type f | sort > "$OUT/source_files.txt"
+
+echo "Python files:"
+find trader -name '*.py' | wc -l
+
+echo
+echo "Tests:"
+find tests -type f | wc -l
+
+echo
+echo "Feature files:"
+find trader -type f | sort
+
+# ------------------------------------------------------------
+# 16. SECURITY / SECRET SCAN
+# ------------------------------------------------------------
+
+section "16 — BASIC SECRET / CONFIG SCAN"
+
+grep -RInE \
+'api[_-]?key|secret[_-]?key|password|token|private[_-]?key' \
+trader config.yaml .env 2>/dev/null \
+> "$OUT/secret_scan.txt" || true
+
+cat "$OUT/secret_scan.txt"
+
+# ------------------------------------------------------------
+# 17. FINAL SUMMARY
+# ------------------------------------------------------------
+
+section "FINAL SUMMARY"
+
+echo "PASS = $PASS"
+echo "FAIL = $FAIL"
+echo "WARN = $WARN"
+
+echo
+echo "Generated reports:"
+find "$OUT" -maxdepth 2 -type f | sort
+
+echo
+echo "============================================================"
+echo " AUDIT FINISHED"
+echo " $(date -Is)"
+echo " REPORT: $OUT"
+echo "============================================================"
+
+BASH
+
+chmod +x full_system_audit.sh
+./full_system_audit.sh
+============================================================
+ TEXTRADER — FULL MULTI-LAYER SYSTEM AUDIT
+ Started: 2026-09-27T19:52:35+03:30
+ Root: /home/moeid/Desktop/15/FINAL
+ Report: /home/moeid/Desktop/15/FINAL/stress_report_20260927_195235
+============================================================
+
+
+============================================================
+ 0 — ENVIRONMENT
+============================================================
+Python 3.13.12
+pip 25.3 from /home/moeid/Desktop/15/FINAL/.venv/lib/python3.13/site-packages/pip (python 3.13)
+No broken requirements found.
+
+CPU:
+8
+
+MEMORY:
+               total        used        free      shared  buff/cache   available
+Mem:           7.6Gi       2.9Gi       2.9Gi       324Mi       2.4Gi       4.7Gi
+Swap:           27Gi          0B        27Gi
+
+DISK:
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda10      174G  108G   58G  66% /home
+
+PYTHON PACKAGES:
+ccxt               4.5.84
+fastapi            0.141.1
+httpx              0.28.1
+pydantic           2.13.5
+pydantic_core      2.46.5
+pytest             9.1.1
+pytest-cov         7.1.0
+PyYAML             6.0.3
+uvicorn            0.54.0
+
+
+============================================================
+ 1 — PACKAGE / IMPORT / COMPILE
+============================================================
+
+------------------------------------------------------------
+[TEST] compileall
+------------------------------------------------------------
+[PASS] compileall
+
+------------------------------------------------------------
+[TEST] import_core
+------------------------------------------------------------
+[PASS] import_core
+
+------------------------------------------------------------
+[TEST] cli_help
+------------------------------------------------------------
+[PASS] cli_help
+
+------------------------------------------------------------
+[TEST] cli_doctor
+------------------------------------------------------------
+[PASS] cli_doctor
+
+
+============================================================
+ 2 — TEST SUITE / COVERAGE
+============================================================
+
+------------------------------------------------------------
+[TEST] pytest_full
+------------------------------------------------------------
+[PASS] pytest_full
+
+[COVERAGE]
+........................................................................ [ 82%]
+...............                                                          [100%]
+=============================== warnings summary ===============================
+.venv/lib/python3.13/site-packages/fastapi/testclient.py:1
+  /home/moeid/Desktop/15/FINAL/.venv/lib/python3.13/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.13.12-final-0 _______________
+
+Name                                    Stmts   Miss  Cover   Missing
+---------------------------------------------------------------------
+trader/__init__.py                          5      0   100%
+trader/adapters/__init__.py                 0      0   100%
+trader/adapters/broker/__init__.py         10      4    60%   11-14
+trader/adapters/broker/base.py             26      0   100%
+trader/adapters/broker/ccxt.py             39     39     0%   6-55
+trader/adapters/broker/mock.py             36      6    83%   29, 33, 42, 57, 61-62
+trader/adapters/llm.py                    105     55    48%   61-70, 87-88, 93-105, 122-124, 129-143, 157-159, 164-178, 204, 208, 214-218, 241-245, 249-263
+trader/adapters/source_connector.py       121    121     0%   26-192
+trader/cli.py                             226    124    45%   17, 21, 25-36, 40-52, 56-67, 71-75, 79-88, 93-101, 105-107, 111-114, 118-127, 131-136, 140-148, 152-156, 160-163, 167-170, 174-180, 184-194, 282-284, 288-290, 294
+trader/core/__init__.py                     0      0   100%
+trader/core/config.py                     104     17    84%   51, 94, 98, 110, 112, 121, 137-144, 150, 157-158
+trader/core/invariants.py                  28     28     0%   15-69
+trader/core/schemas.py                    215      7    97%   142, 200, 332-334, 363, 365
+trader/core/state_machine.py               61      2    97%   107, 124
+trader/core/util.py                        33      5    85%   22, 35, 39, 48-49
+trader/engine/__init__.py                   2      0   100%
+trader/engine/orchestrator.py             336     48    86%   227-231, 281, 310-314, 333-337, 383-390, 398-406, 490-498, 508, 534-539, 545, 564-565
+trader/knowledge.py                        23     23     0%   6-43
+trader/market/__init__.py                   2      0   100%
+trader/market/binance.py                   55     19    65%   22-29, 36, 39, 42, 67-106
+trader/memory/__init__.py                   4      0   100%
+trader/memory/db_manager.py                40      1    98%   62
+trader/memory/manager.py                  103     10    90%   101, 146-152, 161-163
+trader/memory/stores.py                    69      1    99%   137
+trader/research.py                         21     21     0%   6-38
+trader/scripts/__init__.py                  0      0   100%
+trader/scripts/run_backtest.py             57     57     0%   2-81
+trader/scripts/run_demo.py                 17     17     0%   2-24
+trader/scripts/run_paper.py                38     38     0%   2-63
+trader/scripts/run_research.py              7      7     0%   1-8
+trader/services/__init__.py                 0      0   100%
+trader/services/agent1.py                  57     11    81%   52-56, 75-77, 100-105
+trader/services/agent2.py                  88     16    82%   59, 65-74, 88-90, 100, 112, 138, 156, 160, 172, 191, 203
+trader/services/agent3.py                  66     15    77%   51, 56-59, 76-78, 83, 100-102, 116-119
+trader/services/agent_base.py              62      3    95%   57, 81-82
+trader/services/context_service.py         47      6    87%   44, 56-58, 69-70
+trader/services/data_reader.py             80      5    94%   26, 139-144
+trader/services/decision_engine.py         46      3    93%   25, 35, 57
+trader/services/decision_validator.py      34      9    74%   30, 32, 34, 36, 38, 46, 51-53
+trader/services/execution_guard.py         22      0   100%
+trader/services/final_tools.py             36      5    86%   28, 65-69
+trader/services/kill_switch.py             56     21    62%   34-35, 39-40, 45, 55-56, 60-75
+trader/services/message_service.py         79     17    78%   33-36, 44-52, 92, 95, 124-127, 140-141
+trader/services/metrics.py                 23     23     0%   2-33
+trader/services/observability.py           52     13    75%   35, 38-39, 54-57, 64-66, 69-72
+trader/services/position_sizer.py          24      2    92%   26, 29
+trader/services/risk_engine.py             66      9    86%   55-68
+trader/services/super_agent.py             42      5    88%   24-28
+trader/storage/__init__.py                  3      0   100%
+trader/storage/connection.py               56      7    88%   28, 37-40, 71, 75
+trader/storage/repo.py                    106     24    77%   26, 28, 38-39, 115-116, 129-130, 185-190, 203-214
+trader/storage/schema.py                    8      1    88%   155
+trader/web/__init__.py                      0      0   100%
+trader/web/server.py                      277     79    71%   96-98, 108, 111, 115, 117, 119, 121, 126, 130, 133, 142, 149, 159, 236, 246-252, 256-266, 275, 279-282, 286-288, 292-294, 298, 303-304, 308-318, 322-323, 328-330, 334-336, 340-344, 348-350, 357, 384-387
+---------------------------------------------------------------------
+TOTAL                                    3113    924    70%
+Coverage HTML written to dir /home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html
+
+
+============================================================
+ 3 — CLI FEATURE MATRIX
+============================================================
+
+------------------------------------------------------------
+[TEST] cli_market_mock
+------------------------------------------------------------
+[FAIL] cli_market_mock
+ERROR: market data request failed: <urlopen error [Errno 101] Network is unreachable>
+Hint: verify internet/DNS access and that the exchange endpoint is reachable.
+
+------------------------------------------------------------
+[TEST] cli_analyze_mock
+------------------------------------------------------------
+[PASS] cli_analyze_mock
+
+------------------------------------------------------------
+[TEST] cli_paper
+------------------------------------------------------------
+[PASS] cli_paper
+
+------------------------------------------------------------
+[TEST] cli_backtest
+------------------------------------------------------------
+[PASS] cli_backtest
+
+------------------------------------------------------------
+[TEST] cli_research
+------------------------------------------------------------
+[PASS] cli_research
+
+------------------------------------------------------------
+[TEST] cli_llm_list
+------------------------------------------------------------
+[PASS] cli_llm_list
+
+------------------------------------------------------------
+[TEST] cli_llm_test
+------------------------------------------------------------
+[PASS] cli_llm_test
+
+------------------------------------------------------------
+[TEST] cli_connector_list
+------------------------------------------------------------
+[PASS] cli_connector_list
+
+
+============================================================
+ 4 — DATABASE / PERSISTENCE
+============================================================
+DATABASE: data/trader.db
+SIZE: 1171456
+
+TABLES:
+  audit_log
+  contexts
+  cycles
+  data_bundles
+  decisions
+  failure_paths
+  memory_items
+  observability_events
+  orders
+  portfolio_state
+  risk_results
+  sqlite_sequence
+  state_machine_log
+  veto_events
+
+COUNTS:
+audit_log                 442
+contexts                  45
+cycles                    45
+data_bundles              246
+decisions                 131
+failure_paths             387
+memory_items              30
+observability_events      2119
+orders                    35
+portfolio_state           14
+risk_results              385
+sqlite_sequence           7
+state_machine_log         392
+veto_events               35
+
+INTEGRITY:
+ok
+
+FOREIGN KEYS:
+[]
+
+JOURNAL:
+wal
+
+
+============================================================
+ 5 — END-TO-END DECISION PIPELINE
+============================================================
+Traceback (most recent call last):
+  File "<stdin>", line 2, in <module>
+ModuleNotFoundError: No module named 'trader.orchestrator'
+
+
+============================================================
+ 6 — SEQUENTIAL STRESS
+============================================================
+Traceback (most recent call last):
+  File "<stdin>", line 2, in <module>
+ModuleNotFoundError: No module named 'trader.orchestrator'
+
+
+============================================================
+ 7 — MULTIPROCESS STRESS
+============================================================
+multiprocessing.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/usr/lib/python3.13/multiprocessing/pool.py", line 125, in worker
+    result = (True, func(*args, **kwds))
+                    ~~~~^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/multiprocessing/pool.py", line 48, in mapstar
+    return list(map(*args))
+  File "<stdin>", line 5, in worker
+ModuleNotFoundError: No module named 'trader.orchestrator'
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "<stdin>", line 26, in <module>
+  File "/usr/lib/python3.13/multiprocessing/pool.py", line 367, in map
+    return self._map_async(func, iterable, mapstar, chunksize).get()
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.13/multiprocessing/pool.py", line 774, in get
+    raise self._value
+ModuleNotFoundError: No module named 'trader.orchestrator'
+
+
+============================================================
+ 8 — THREAD SAFETY
+============================================================
+Traceback (most recent call last):
+  File "<stdin>", line 2, in <module>
+ModuleNotFoundError: No module named 'trader.orchestrator'
+
+
+============================================================
+ 9 — INPUT VALIDATION / ADVERSARIAL DATA
+============================================================
+valid REJECTED ValidationError
+bad_ohlc REJECTED ValidationError
+negative_volume REJECTED ValidationError
+negative_equity REJECTED ValidationError
+bad_completeness REJECTED ValidationError
+
+
+============================================================
+ 10 — KILL SWITCH
+============================================================
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+ModuleNotFoundError: No module named 'trader.orchestrator'
+
+
+============================================================
+ 11 — CLI KILL SWITCH
+============================================================
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/moeid/Desktop/15/FINAL/trader/cli.py", line 294, in <module>
+    main()
+    ~~~~^^
+  File "/home/moeid/Desktop/15/FINAL/trader/cli.py", line 290, in main
+    raise SystemExit(args.func(args))
+                     ~~~~~~~~~^^^^^^
+  File "/home/moeid/Desktop/15/FINAL/trader/cli.py", line 174, in cmd_kill
+    o = _build_orchestrator(args)
+  File "/home/moeid/Desktop/15/FINAL/trader/cli.py", line 30, in _build_orchestrator
+    if args.symbol:
+       ^^^^^^^^^^^
+AttributeError: 'Namespace' object has no attribute 'symbol'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/moeid/Desktop/15/FINAL/trader/cli.py", line 294, in <module>
+    main()
+    ~~~~^^
+  File "/home/moeid/Desktop/15/FINAL/trader/cli.py", line 290, in main
+    raise SystemExit(args.func(args))
+                     ~~~~~~~~~^^^^^^
+  File "/home/moeid/Desktop/15/FINAL/trader/cli.py", line 174, in cmd_kill
+    o = _build_orchestrator(args)
+  File "/home/moeid/Desktop/15/FINAL/trader/cli.py", line 30, in _build_orchestrator
+    if args.symbol:
+       ^^^^^^^^^^^
+AttributeError: 'Namespace' object has no attribute 'symbol'
+
+
+============================================================
+ 12 — WEB CONTROL PLANE
+============================================================
+/ 200 b'<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">\n<title>TEXTRADER X \xe2\x80\x94 Intelligence Control Center</title>\n<style>\n:root'
+/api/health 200 b'{"status":"ok","service":"textrader-control-plane","version":"4.0.0","state":"IDLE","kill_switch":{"active":false,"reason":"","activated_at":null},"history_size":0}'
+/api/market ERROR TimeoutError('timed out')
+/api/runs 200 b'{"runs":[]}'
+/api/config 200 b'{"risk":{"max_position_size":1000.0,"max_daily_loss":0.02,"max_drawdown":0.1,"exposure_limit":0.5,"leverage_limit":1.0,"require_stop_loss":true,"require_take_profit":true,"max_correlation":0.85,"max_p'
+/api/llm/providers 200 b'{"active":"mock","available":["anthropic","mock","ollama","openai"]}'
+/api/connectors 200 b'{}'
+/api/modules 200 b'{"modules":[{"id":"overview","label":"Overview","status":"active"},{"id":"cycle","label":"Run Cycle","status":"active"},{"id":"history","label":"History","status":"active"},{"id":"risk","label":"Risk '
+/docs 200 b'\n    <!DOCTYPE html>\n    <html>\n    <head>\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swag'
+/openapi.json 200 b'{"openapi":"3.1.0","info":{"title":"TEXTRADER X Control Plane","description":"Auditable admin/control plane for autonomous trading analysis.","version":"4.0.0"},"paths":{"/api/health":{"get":{"summary'
+
+
+============================================================
+ 13 — API CONCURRENCY
+============================================================
+requests = 100
+200 = 100
+errors = 0
+
+
+============================================================
+ 14 — RESOURCE GROWTH
+============================================================
+db_bytes = 1171456
+cycles 45
+data_bundles 246
+decisions 131
+orders 35
+risk_results 385
+audit_log 442
+observability_events 2119
+state_machine_log 392
+
+
+============================================================
+ 15 — SOURCE / FEATURE INVENTORY
+============================================================
+Python files:
+54
+
+Tests:
+67
+
+Feature files:
+trader/adapters/broker/base.py
+trader/adapters/broker/ccxt.py
+trader/adapters/broker/__init__.py
+trader/adapters/broker/mock.py
+trader/adapters/broker/__pycache__/base.cpython-312.pyc
+trader/adapters/broker/__pycache__/base.cpython-313.pyc
+trader/adapters/broker/__pycache__/ccxt.cpython-312.pyc
+trader/adapters/broker/__pycache__/ccxt.cpython-313.pyc
+trader/adapters/broker/__pycache__/__init__.cpython-312.pyc
+trader/adapters/broker/__pycache__/__init__.cpython-313.pyc
+trader/adapters/broker/__pycache__/mock.cpython-312.pyc
+trader/adapters/broker/__pycache__/mock.cpython-313.pyc
+trader/adapters/__init__.py
+trader/adapters/llm.py
+trader/adapters/__pycache__/__init__.cpython-312.pyc
+trader/adapters/__pycache__/__init__.cpython-313.pyc
+trader/adapters/__pycache__/llm.cpython-312.pyc
+trader/adapters/__pycache__/llm.cpython-313.pyc
+trader/adapters/__pycache__/source_connector.cpython-312.pyc
+trader/adapters/__pycache__/source_connector.cpython-313.pyc
+trader/adapters/source_connector.py
+trader/cli.py
+trader/core/config.py
+trader/core/__init__.py
+trader/core/invariants.py
+trader/core/__pycache__/config.cpython-312.pyc
+trader/core/__pycache__/config.cpython-313.pyc
+trader/core/__pycache__/__init__.cpython-312.pyc
+trader/core/__pycache__/__init__.cpython-313.pyc
+trader/core/__pycache__/invariants.cpython-312.pyc
+trader/core/__pycache__/invariants.cpython-313.pyc
+trader/core/__pycache__/schemas.cpython-312.pyc
+trader/core/__pycache__/schemas.cpython-313.pyc
+trader/core/__pycache__/state_machine.cpython-312.pyc
+trader/core/__pycache__/state_machine.cpython-313.pyc
+trader/core/__pycache__/util.cpython-312.pyc
+trader/core/__pycache__/util.cpython-313.pyc
+trader/core/schemas.py
+trader/core/state_machine.py
+trader/core/util.py
+trader/engine/__init__.py
+trader/engine/orchestrator.py
+trader/engine/__pycache__/__init__.cpython-312.pyc
+trader/engine/__pycache__/__init__.cpython-313.pyc
+trader/engine/__pycache__/orchestrator.cpython-312.pyc
+trader/engine/__pycache__/orchestrator.cpython-313.pyc
+trader/__init__.py
+trader/knowledge.py
+trader/market/binance.py
+trader/market/__init__.py
+trader/market/__pycache__/binance.cpython-312.pyc
+trader/market/__pycache__/binance.cpython-313.pyc
+trader/market/__pycache__/__init__.cpython-312.pyc
+trader/market/__pycache__/__init__.cpython-313.pyc
+trader/memory/db_manager.py
+trader/memory/__init__.py
+trader/memory/manager.py
+trader/memory/__pycache__/db_manager.cpython-312.pyc
+trader/memory/__pycache__/db_manager.cpython-313.pyc
+trader/memory/__pycache__/__init__.cpython-312.pyc
+trader/memory/__pycache__/__init__.cpython-313.pyc
+trader/memory/__pycache__/manager.cpython-312.pyc
+trader/memory/__pycache__/manager.cpython-313.pyc
+trader/memory/__pycache__/stores.cpython-312.pyc
+trader/memory/__pycache__/stores.cpython-313.pyc
+trader/memory/stores.py
+trader/__pycache__/cli.cpython-312.pyc
+trader/__pycache__/cli.cpython-313.pyc
+trader/__pycache__/__init__.cpython-312.pyc
+trader/__pycache__/__init__.cpython-313.pyc
+trader/__pycache__/knowledge.cpython-312.pyc
+trader/__pycache__/knowledge.cpython-313.pyc
+trader/__pycache__/research.cpython-312.pyc
+trader/__pycache__/research.cpython-313.pyc
+trader/research.py
+trader/scripts/__init__.py
+trader/scripts/__pycache__/__init__.cpython-312.pyc
+trader/scripts/__pycache__/__init__.cpython-313.pyc
+trader/scripts/__pycache__/run_backtest.cpython-312.pyc
+trader/scripts/__pycache__/run_backtest.cpython-313.pyc
+trader/scripts/__pycache__/run_demo.cpython-312.pyc
+trader/scripts/__pycache__/run_demo.cpython-313.pyc
+trader/scripts/__pycache__/run_paper.cpython-312.pyc
+trader/scripts/__pycache__/run_paper.cpython-313.pyc
+trader/scripts/__pycache__/run_research.cpython-312.pyc
+trader/scripts/__pycache__/run_research.cpython-313.pyc
+trader/scripts/run_backtest.py
+trader/scripts/run_demo.py
+trader/scripts/run_paper.py
+trader/scripts/run_research.py
+trader/services/agent1.py
+trader/services/agent2.py
+trader/services/agent3.py
+trader/services/agent_base.py
+trader/services/context_service.py
+trader/services/data_reader.py
+trader/services/decision_engine.py
+trader/services/decision_validator.py
+trader/services/execution_guard.py
+trader/services/final_tools.py
+trader/services/__init__.py
+trader/services/kill_switch.py
+trader/services/message_service.py
+trader/services/metrics.py
+trader/services/observability.py
+trader/services/position_sizer.py
+trader/services/__pycache__/agent1.cpython-312.pyc
+trader/services/__pycache__/agent1.cpython-313.pyc
+trader/services/__pycache__/agent2.cpython-312.pyc
+trader/services/__pycache__/agent2.cpython-313.pyc
+trader/services/__pycache__/agent3.cpython-312.pyc
+trader/services/__pycache__/agent3.cpython-313.pyc
+trader/services/__pycache__/agent_base.cpython-312.pyc
+trader/services/__pycache__/agent_base.cpython-313.pyc
+trader/services/__pycache__/context_service.cpython-312.pyc
+trader/services/__pycache__/context_service.cpython-313.pyc
+trader/services/__pycache__/data_reader.cpython-312.pyc
+trader/services/__pycache__/data_reader.cpython-313.pyc
+trader/services/__pycache__/decision_engine.cpython-312.pyc
+trader/services/__pycache__/decision_engine.cpython-313.pyc
+trader/services/__pycache__/decision_validator.cpython-312.pyc
+trader/services/__pycache__/decision_validator.cpython-313.pyc
+trader/services/__pycache__/execution_guard.cpython-312.pyc
+trader/services/__pycache__/execution_guard.cpython-313.pyc
+trader/services/__pycache__/final_tools.cpython-312.pyc
+trader/services/__pycache__/final_tools.cpython-313.pyc
+trader/services/__pycache__/__init__.cpython-312.pyc
+trader/services/__pycache__/__init__.cpython-313.pyc
+trader/services/__pycache__/kill_switch.cpython-312.pyc
+trader/services/__pycache__/kill_switch.cpython-313.pyc
+trader/services/__pycache__/message_service.cpython-312.pyc
+trader/services/__pycache__/message_service.cpython-313.pyc
+trader/services/__pycache__/metrics.cpython-312.pyc
+trader/services/__pycache__/metrics.cpython-313.pyc
+trader/services/__pycache__/observability.cpython-312.pyc
+trader/services/__pycache__/observability.cpython-313.pyc
+trader/services/__pycache__/position_sizer.cpython-312.pyc
+trader/services/__pycache__/position_sizer.cpython-313.pyc
+trader/services/__pycache__/risk_engine.cpython-312.pyc
+trader/services/__pycache__/risk_engine.cpython-313.pyc
+trader/services/__pycache__/super_agent.cpython-312.pyc
+trader/services/__pycache__/super_agent.cpython-313.pyc
+trader/services/risk_engine.py
+trader/services/super_agent.py
+trader/storage/connection.py
+trader/storage/__init__.py
+trader/storage/__pycache__/connection.cpython-312.pyc
+trader/storage/__pycache__/connection.cpython-313.pyc
+trader/storage/__pycache__/__init__.cpython-312.pyc
+trader/storage/__pycache__/__init__.cpython-313.pyc
+trader/storage/__pycache__/repo.cpython-312.pyc
+trader/storage/__pycache__/repo.cpython-313.pyc
+trader/storage/__pycache__/schema.cpython-312.pyc
+trader/storage/__pycache__/schema.cpython-313.pyc
+trader/storage/repo.py
+trader/storage/schema.py
+trader/web/__init__.py
+trader/web/__pycache__/__init__.cpython-312.pyc
+trader/web/__pycache__/__init__.cpython-313.pyc
+trader/web/__pycache__/server.cpython-312.pyc
+trader/web/__pycache__/server.cpython-313.pyc
+trader/web/server.py
+trader/web/static/index.html
+
+
+============================================================
+ 16 — BASIC SECRET / CONFIG SCAN
+============================================================
+trader/web/server.py:224:    api_key_env: str = ""
+trader/web/static/index.html:120:async function addConnector(){const mode=$('cMode').value;const body={name:$('cName').value.trim(),mode,purpose:$('cPurpose').value};if(!body.name)return;if(mode==='url'){body.url=$('cTarget').value.trim()}else{body.base_url=$('cTarget').value.trim();body.api_key_env=$('cKeyEnv').value.trim()}await api('/api/connectors',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});loadConnectors()}
+trader/cli.py:145:                                api_key_env=args.api_key_env or "", purpose=args.purpose)
+trader/cli.py:242:    ll_test = llsp.add_parser("test", help="send a 1-token probe through the provider")
+trader/cli.py:248:    cn_add = cnsp.add_parser("add", help="register a connector: --base-url+--api-key-env (api mode) or --url (url mode)")
+trader/cli.py:251:    cn_add.add_argument("--api-key-env", default="", help="env var name holding the API key (api mode)")
+trader/adapters/source_connector.py:12:    - api mode:  name, base_url, api_key_env (env var holding the secret —
+trader/adapters/source_connector.py:80:    api_key_env: str = ""         # env var name holding the secret (never the key itself)
+trader/adapters/source_connector.py:85:    def _api_key(self) -> str | None:
+trader/adapters/source_connector.py:86:        return os.getenv(self.api_key_env) if self.api_key_env else None
+trader/adapters/source_connector.py:103:            key = self._api_key()
+trader/adapters/llm.py:27:                 max_tokens: int = 1024, temperature: float = 0.0,
+trader/adapters/llm.py:42:                 max_tokens: int = 1024, temperature: float = 0.0,
+trader/adapters/llm.py:91:                 max_tokens: int = 1024, temperature: float = 0.0,
+trader/adapters/llm.py:98:                "options": {"temperature": temperature, "num_predict": max_tokens,
+trader/adapters/llm.py:120:    def __init__(self, model: str = "gpt-4o-mini", api_key: str | None = None,
+trader/adapters/llm.py:123:        self.api_key = api_key or os.getenv("OPENAI_API_KEY", "")
+trader/adapters/llm.py:127:                 max_tokens: int = 1024, temperature: float = 0.0,
+trader/adapters/llm.py:129:        if not self.api_key:
+trader/adapters/llm.py:136:                "max_tokens": max_tokens,
+trader/adapters/llm.py:141:            headers={"Authorization": f"Bearer {self.api_key}"},
+trader/adapters/llm.py:155:    def __init__(self, model: str = "claude-sonnet-4-6", api_key: str | None = None,
+trader/adapters/llm.py:158:        self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY", "")
+trader/adapters/llm.py:162:                 max_tokens: int = 1024, temperature: float = 0.0,
+trader/adapters/llm.py:164:        if not self.api_key:
+trader/adapters/llm.py:170:                "max_tokens": max_tokens,
+trader/adapters/llm.py:175:            headers={"x-api-key": self.api_key, "anthropic-version": "2023-06-01"},
+trader/adapters/llm.py:242:            out = self.complete("Reply with exactly one word.", "Say OK.", max_tokens=8)
+
+
+============================================================
+ FINAL SUMMARY
+============================================================
+PASS = 12
+FAIL = 1
+WARN = 0
+
+Generated reports:
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/api_concurrency.txt
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/cli_analyze_mock.out
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/cli_backtest.out
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/cli_connector_list.out
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/cli_doctor.out
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/cli_help.out
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/cli_killswitch_off.txt
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/cli_killswitch_on.txt
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/cli_llm_list.out
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/cli_llm_test.out
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/cli_market_mock.out
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/cli_paper.out
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/cli_research.out
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/compileall.out
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/class_index.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/coverage_html_cb_15cffcd0.js
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/favicon_32_cb_c827f16f.png
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/function_index.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/.gitignore
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/index.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/keybd_closed_cb_900cfef5.png
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/status.json
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/style_cb_4667309f.css
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_0717818b581bf771_cli_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_0717818b581bf771___init___py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_0717818b581bf771_knowledge_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_0717818b581bf771_research_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_16302e952ddb91ca_config_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_16302e952ddb91ca___init___py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_16302e952ddb91ca_invariants_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_16302e952ddb91ca_schemas_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_16302e952ddb91ca_state_machine_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_16302e952ddb91ca_util_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_309dd348cc86dfff___init___py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_309dd348cc86dfff_run_backtest_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_309dd348cc86dfff_run_demo_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_309dd348cc86dfff_run_paper_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_309dd348cc86dfff_run_research_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_5d811546ea6a3102___init___py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_5d811546ea6a3102_server_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_695a31850e99661c_base_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_695a31850e99661c_ccxt_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_695a31850e99661c___init___py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_695a31850e99661c_mock_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_7ee84387da42beb0_connection_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_7ee84387da42beb0___init___py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_7ee84387da42beb0_repo_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_7ee84387da42beb0_schema_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_c8de8a5f1030574c_binance_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_c8de8a5f1030574c___init___py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_agent1_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_agent2_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_agent3_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_agent_base_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_context_service_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_data_reader_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_decision_engine_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_decision_validator_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_execution_guard_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_final_tools_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126___init___py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_kill_switch_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_message_service_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_metrics_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_observability_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_position_sizer_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_risk_engine_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_super_agent_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250___init___py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_e8c023c1ccd3fd75___init___py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_e8c023c1ccd3fd75_llm_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_e8c023c1ccd3fd75_source_connector_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_f290e8364c0b05ee_db_manager_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_f290e8364c0b05ee___init___py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_f290e8364c0b05ee_manager_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_f290e8364c0b05ee_stores_py.html
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage.out
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/database_report.txt
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/full.log
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/import_core.out
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/kill_switch.txt
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/multiprocess_stress.txt
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/pipeline_audit.json
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/pytest_full.out
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/resource_report.txt
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/secret_scan.txt
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/sequential_stress.txt
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/source_files.txt
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/thread_stress.txt
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/validation_audit.txt
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/web_api_audit.txt
+/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/web.log
+
+============================================================
+ AUDIT FINISHED
+ 2026-09-27T20:07:27+03:30
+ REPORT: /home/moeid/Desktop/15/FINAL/stress_report_20260927_195235
+============================================================
+                                                                                                                   
+┌──(.venv)─(moeid㉿kali)-[~/Desktop/15/FINAL]
+└─$ echo "===== FAILURES ====="
+grep -RniE '\[FAIL\]|ERROR|Traceback|FAILED|error|exception' stress_report_*/*.out stress_report_*/*.txt 2>/dev/null | head -200
+===== FAILURES =====
+stress_report_20260927_195235/cli_analyze_mock.out:160:  "errors": []
+stress_report_20260927_195235/cli_market_mock.out:1:ERROR: market data request failed: <urlopen error [Errno 101] Network is unreachable>
+stress_report_20260927_195235/cli_paper.out:1:[1/10] cycle=cyc_3e7562029d6a state=IDLE decision=BUY errors=0
+stress_report_20260927_195235/cli_paper.out:2:[2/10] cycle=cyc_4eef99b7f3d9 state=IDLE decision=WAIT errors=0
+stress_report_20260927_195235/cli_paper.out:3:[3/10] cycle=cyc_aa23fbe7d844 state=IDLE decision=BUY errors=0
+stress_report_20260927_195235/cli_paper.out:4:[4/10] cycle=cyc_5733e6367aa4 state=IDLE decision=WAIT errors=0
+stress_report_20260927_195235/cli_paper.out:5:[5/10] cycle=cyc_207ecd340923 state=IDLE decision=BUY errors=0
+stress_report_20260927_195235/cli_paper.out:6:[6/10] cycle=cyc_c80a90755758 state=IDLE decision=WAIT errors=0
+stress_report_20260927_195235/cli_paper.out:7:[7/10] cycle=cyc_c6c2305ca619 state=IDLE decision=BUY errors=0
+stress_report_20260927_195235/cli_paper.out:8:[8/10] cycle=cyc_dd428236d638 state=IDLE decision=WAIT errors=0
+stress_report_20260927_195235/cli_paper.out:9:[9/10] cycle=cyc_c798540e75ef state=IDLE decision=BUY errors=0
+stress_report_20260927_195235/cli_paper.out:10:[10/10] cycle=cyc_23fe8bb58754 state=IDLE decision=BUY errors=0
+stress_report_20260927_195235/api_concurrency.txt:3:errors = 0
+stress_report_20260927_195235/cli_killswitch_off.txt:1:Traceback (most recent call last):
+stress_report_20260927_195235/cli_killswitch_off.txt:15:AttributeError: 'Namespace' object has no attribute 'symbol'
+stress_report_20260927_195235/cli_killswitch_on.txt:1:Traceback (most recent call last):
+stress_report_20260927_195235/cli_killswitch_on.txt:15:AttributeError: 'Namespace' object has no attribute 'symbol'
+stress_report_20260927_195235/validation_audit.txt:1:valid REJECTED ValidationError
+stress_report_20260927_195235/validation_audit.txt:2:bad_ohlc REJECTED ValidationError
+stress_report_20260927_195235/validation_audit.txt:3:negative_volume REJECTED ValidationError
+stress_report_20260927_195235/validation_audit.txt:4:negative_equity REJECTED ValidationError
+stress_report_20260927_195235/validation_audit.txt:5:bad_completeness REJECTED ValidationError
+stress_report_20260927_195235/web_api_audit.txt:3:/api/market ERROR TimeoutError('timed out')
+                                                                                                                   
+┌──(.venv)─(moeid㉿kali)-[~/Desktop/15/FINAL]
+└─$ echo "===== DATABASE ====="
+cat stress_report_*/database_report.txt
+===== DATABASE =====
+DATABASE: data/trader.db
+SIZE: 1171456
+
+TABLES:
+  audit_log
+  contexts
+  cycles
+  data_bundles
+  decisions
+  failure_paths
+  memory_items
+  observability_events
+  orders
+  portfolio_state
+  risk_results
+  sqlite_sequence
+  state_machine_log
+  veto_events
+
+COUNTS:
+audit_log                 442
+contexts                  45
+cycles                    45
+data_bundles              246
+decisions                 131
+failure_paths             387
+memory_items              30
+observability_events      2119
+orders                    35
+portfolio_state           14
+risk_results              385
+sqlite_sequence           7
+state_machine_log         392
+veto_events               35
+
+INTEGRITY:
+ok
+
+FOREIGN KEYS:
+[]
+
+JOURNAL:
+wal
+                                                                                                                   
+┌──(.venv)─(moeid㉿kali)-[~/Desktop/15/FINAL]
+└─$ tar -czf textrader_full_audit_$(date +%Y%m%d_%H%M%S).tar.gz stress_report_*
+ls -lh textrader_full_audit_*.tar.gz
+-rw-rw-r-- 1 moeid moeid 250K Sep 27 20:26 textrader_full_audit_20260927_202600.tar.gz
+                                                                                                                   
+┌──(.venv)─(moeid㉿kali)-[~/Desktop/15/FINAL]
+└─$ grep -RniE \
+'\[FAIL\]|ERROR|Traceback|FAILED|errors =|cycles/sec|integrity|coverage|ACCEPTED|REJECTED|200 =|db_bytes|final_state' \
+stress_report_*/* \
+2>/dev/null | tail -300
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_final_tools_py.html:153:    <p class="mis mis2 show_mis"><span class="n"><a id="t71" href="#t71">71</a></span><span class="t">                                    <span class="nam">broker_ack</span><span class="op">=</span><span class="fst">f&quot;</span><span class="fst">broker error: </span><span class="op">{</span><span class="nam">e</span><span class="op">}</span><span class="fst">&quot;</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_final_tools_py.html:156:    <p class="run run2"><span class="n"><a id="t74" href="#t74">74</a></span><span class="t">                  <span class="key">else</span> <span class="nam">OrderStatus</span><span class="op">.</span><span class="nam">REJECTED</span><span class="op">.</span><span class="nam">value</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_final_tools_py.html:174:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_16302e952ddb91ca_schemas_py.html:5:    <title>Coverage for trader/core/schemas.py: 97%</title>
+stress_report_20260927_195235/coverage_html/z_16302e952ddb91ca_schemas_py.html:8:    <script src="coverage_html_cb_15cffcd0.js" defer></script>
+stress_report_20260927_195235/coverage_html/z_16302e952ddb91ca_schemas_py.html:14:            <span class="text">Coverage for </span><b>trader<span class="sep">/</span>core<span class="sep">/</span>schemas.py</b>:
+stress_report_20260927_195235/coverage_html/z_16302e952ddb91ca_schemas_py.html:67:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_16302e952ddb91ca_schemas_py.html:94:    <p class="pln"><span class="n"><a id="t12" href="#t12">12</a></span><span class="t"><span class="str">integrity easy to enforce.</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_16302e952ddb91ca_schemas_py.html:181:    <p class="run"><span class="n"><a id="t99" href="#t99">99</a></span><span class="t">    <span class="nam">REJECTED</span> <span class="op">=</span> <span class="str">&quot;rejected&quot;</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_16302e952ddb91ca_schemas_py.html:346:    <p class="run"><span class="n"><a id="t264" href="#t264">264</a></span><span class="t">    <span class="key">def</span> <span class="nam">rejected_by</span><span class="op">(</span><span class="nam">self</span><span class="op">)</span> <span class="op">-&gt;</span> <span class="nam">list</span><span class="op">[</span><span class="nam">str</span><span class="op">]</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_16302e952ddb91ca_schemas_py.html:407:    <p class="run"><span class="n"><a id="t325" href="#t325">325</a></span><span class="t">    <span class="nam">level</span><span class="op">:</span> <span class="nam">str</span>          <span class="com"># &quot;debug&quot; | &quot;info&quot; | &quot;warn&quot; | &quot;error&quot;</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_16302e952ddb91ca_schemas_py.html:468:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_0717818b581bf771_research_py.html:5:    <title>Coverage for trader/research.py: 0%</title>
+stress_report_20260927_195235/coverage_html/z_0717818b581bf771_research_py.html:8:    <script src="coverage_html_cb_15cffcd0.js" defer></script>
+stress_report_20260927_195235/coverage_html/z_0717818b581bf771_research_py.html:14:            <span class="text">Coverage for </span><b>trader<span class="sep">/</span>research.py</b>:
+stress_report_20260927_195235/coverage_html/z_0717818b581bf771_research_py.html:67:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_0717818b581bf771_research_py.html:105:    <p class="mis show_mis"><span class="n"><a id="t23" href="#t23">23</a></span><span class="t">            <span class="nam">raw</span> <span class="op">=</span> <span class="nam">r</span><span class="op">.</span><span class="nam">read</span><span class="op">(</span><span class="num">200_000</span><span class="op">)</span><span class="op">.</span><span class="nam">decode</span><span class="op">(</span><span class="str">&quot;utf-8&quot;</span><span class="op">,</span> <span class="nam">errors</span><span class="op">=</span><span class="str">&quot;replace&quot;</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_0717818b581bf771_research_py.html:129:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_message_service_py.html:5:    <title>Coverage for trader/services/message_service.py: 78%</title>
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_message_service_py.html:8:    <script src="coverage_html_cb_15cffcd0.js" defer></script>
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_message_service_py.html:14:            <span class="text">Coverage for </span><b>trader<span class="sep">/</span>services<span class="sep">/</span>message_service.py</b>:
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_message_service_py.html:67:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_message_service_py.html:129:    <p class="mis mis2 show_mis"><span class="n"><a id="t47" href="#t47">47</a></span><span class="t">                                <span class="nam">data</span><span class="op">=</span><span class="op">{</span><span class="str">&quot;event&quot;</span><span class="op">:</span> <span class="str">&quot;auth_rejected&quot;</span><span class="op">,</span> <span class="str">&quot;chat_id&quot;</span><span class="op">:</span> <span class="nam">chat_id</span><span class="op">}</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_message_service_py.html:238:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/function_index.html:5:    <title>Coverage report</title>
+stress_report_20260927_195235/coverage_html/function_index.html:8:    <script src="coverage_html_cb_15cffcd0.js" defer></script>
+stress_report_20260927_195235/coverage_html/function_index.html:13:        <h1>Coverage report:
+stress_report_20260927_195235/coverage_html/function_index.html:57:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/function_index.html:73:                <th id="coverage" aria-sort="none" data-shortcut="c">coverage<span class="arrows"></span></th>
+stress_report_20260927_195235/coverage_html/function_index.html:1159:                <td class="name"><a href="z_16302e952ddb91ca_schemas_py.html#t264"><data value='rejected_by'>RiskResult.rejected_by</data></a></td>
+stress_report_20260927_195235/coverage_html/function_index.html:3189:                <td class="name"><a href="z_cc3d45e32aac7126_observability_py.html#t85"><data value='error'>Observability.error</data></a></td>
+stress_report_20260927_195235/coverage_html/function_index.html:4058:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:5:    <title>Coverage for trader/engine/orchestrator.py: 86%</title>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:8:    <script src="coverage_html_cb_15cffcd0.js" defer></script>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:14:            <span class="text">Coverage for </span><b>trader<span class="sep">/</span>engine<span class="sep">/</span>orchestrator.py</b>:
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:67:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:154:    <p class="run"><span class="n"><a id="t72" href="#t72">72</a></span><span class="t">    <span class="nam">final_state</span><span class="op">:</span> <span class="nam">str</span> <span class="op">=</span> <span class="nam">State</span><span class="op">.</span><span class="nam">IDLE</span><span class="op">.</span><span class="nam">value</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:156:    <p class="run"><span class="n"><a id="t74" href="#t74">74</a></span><span class="t">    <span class="nam">errors</span><span class="op">:</span> <span class="nam">list</span><span class="op">[</span><span class="nam">str</span><span class="op">]</span> <span class="op">=</span> <span class="nam">field</span><span class="op">(</span><span class="nam">default_factory</span><span class="op">=</span><span class="nam">list</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:169:    <p class="run run2"><span class="n"><a id="t87" href="#t87">87</a></span><span class="t">            <span class="str">&quot;final_state&quot;</span><span class="op">:</span> <span class="nam">self</span><span class="op">.</span><span class="nam">final_state</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:171:    <p class="run run2"><span class="n"><a id="t89" href="#t89">89</a></span><span class="t">            <span class="str">&quot;errors&quot;</span><span class="op">:</span> <span class="nam">self</span><span class="op">.</span><span class="nam">errors</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:330:    <p class="run run2"><span class="n"><a id="t248" href="#t248">248</a></span><span class="t">                                <span class="nam">final_state</span><span class="op">=</span><span class="nam">State</span><span class="op">.</span><span class="nam">HALTED</span><span class="op">.</span><span class="nam">value</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:331:    <p class="run run2"><span class="n"><a id="t249" href="#t249">249</a></span><span class="t">                                <span class="nam">errors</span><span class="op">=</span><span class="op">[</span><span class="str">&quot;halted_at_start&quot;</span><span class="op">]</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:341:    <p class="run"><span class="n"><a id="t259" href="#t259">259</a></span><span class="t">            <span class="nam">final_state_label</span> <span class="op">=</span> <span class="nam">self</span><span class="op">.</span><span class="nam">sm</span><span class="op">.</span><span class="nam">state</span><span class="op">.</span><span class="nam">value</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:342:    <p class="run"><span class="n"><a id="t260" href="#t260">260</a></span><span class="t">            <span class="nam">repo</span><span class="op">.</span><span class="nam">update_cycle_status</span><span class="op">(</span><span class="nam">self</span><span class="op">.</span><span class="nam">db</span><span class="op">,</span> <span class="nam">cid</span><span class="op">,</span> <span class="str">&quot;completed&quot;</span> <span class="key">if</span> <span class="nam">final_state_label</span> <span class="op">==</span> <span class="str">&quot;IDLE&quot;</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:343:    <p class="run run2"><span class="n"><a id="t261" href="#t261">261</a></span><span class="t">                                     <span class="key">else</span> <span class="nam">final_state_label</span><span class="op">.</span><span class="nam">lower</span><span class="op">(</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:346:    <p class="run"><span class="n"><a id="t264" href="#t264">264</a></span><span class="t">            <span class="nam">result</span><span class="op">.</span><span class="nam">final_state</span> <span class="op">=</span> <span class="nam">final_state_label</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:348:    <p class="run"><span class="n"><a id="t266" href="#t266">266</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">obs</span><span class="op">.</span><span class="nam">error</span><span class="op">(</span><span class="str">&quot;orchestrator&quot;</span><span class="op">,</span> <span class="nam">trace_id</span><span class="op">=</span><span class="nam">cid</span><span class="op">,</span> <span class="nam">data</span><span class="op">=</span><span class="op">{</span><span class="str">&quot;event&quot;</span><span class="op">:</span> <span class="str">&quot;cycle_exception&quot;</span><span class="op">,</span> <span class="str">&quot;error&quot;</span><span class="op">:</span> <span class="nam">str</span><span class="op">(</span><span class="nam">e</span><span class="op">)</span><span class="op">}</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:349:    <p class="run"><span class="n"><a id="t267" href="#t267">267</a></span><span class="t">            <span class="nam">result</span><span class="op">.</span><span class="nam">errors</span><span class="op">.</span><span class="nam">append</span><span class="op">(</span><span class="nam">str</span><span class="op">(</span><span class="nam">e</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:350:    <p class="run"><span class="n"><a id="t268" href="#t268">268</a></span><span class="t">            <span class="nam">repo</span><span class="op">.</span><span class="nam">update_cycle_status</span><span class="op">(</span><span class="nam">self</span><span class="op">.</span><span class="nam">db</span><span class="op">,</span> <span class="nam">cid</span><span class="op">,</span> <span class="str">&quot;error&quot;</span><span class="op">,</span> <span class="nam">ended_at</span><span class="op">=</span><span class="nam">utcnow</span><span class="op">(</span><span class="op">)</span><span class="op">.</span><span class="nam">isoformat</span><span class="op">(</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:351:    <p class="run"><span class="n"><a id="t269" href="#t269">269</a></span><span class="t">            <span class="nam">result</span><span class="op">.</span><span class="nam">final_state</span> <span class="op">=</span> <span class="nam">self</span><span class="op">.</span><span class="nam">sm</span><span class="op">.</span><span class="nam">state</span><span class="op">.</span><span class="nam">value</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:352:    <p class="run"><span class="n"><a id="t270" href="#t270">270</a></span><span class="t">        <span class="nam">self</span><span class="op">.</span><span class="nam">_audit</span><span class="op">(</span><span class="nam">cid</span><span class="op">,</span> <span class="str">&quot;orchestrator&quot;</span><span class="op">,</span> <span class="str">&quot;cycle_end&quot;</span><span class="op">,</span> <span class="op">{</span><span class="str">&quot;cycle_id&quot;</span><span class="op">:</span> <span class="nam">cid</span><span class="op">,</span> <span class="str">&quot;state&quot;</span><span class="op">:</span> <span class="nam">result</span><span class="op">.</span><span class="nam">final_state</span><span class="op">}</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:363:    <p class="mis show_mis"><span class="n"><a id="t281" href="#t281">281</a></span><span class="t">            <span class="key">raise</span> <span class="nam">RuntimeError</span><span class="op">(</span><span class="fst">f&quot;</span><span class="fst">internal cycle start expected READING, got </span><span class="op">{</span><span class="nam">self</span><span class="op">.</span><span class="nam">sm</span><span class="op">.</span><span class="nam">state</span><span class="op">.</span><span class="nam">value</span><span class="op">}</span><span class="fst">&quot;</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:432:    <p class="run"><span class="n"><a id="t350" href="#t350">350</a></span><span class="t">                <span class="nam">result</span><span class="op">.</span><span class="nam">final_state</span> <span class="op">=</span> <span class="nam">State</span><span class="op">.</span><span class="nam">IDLE</span><span class="op">.</span><span class="nam">value</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:445:    <p class="run"><span class="n"><a id="t363" href="#t363">363</a></span><span class="t">            <span class="nam">result</span><span class="op">.</span><span class="nam">final_state</span> <span class="op">=</span> <span class="nam">inner</span><span class="op">.</span><span class="nam">final_state</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:455:    <p class="run"><span class="n"><a id="t373" href="#t373">373</a></span><span class="t">            <span class="nam">result</span><span class="op">.</span><span class="nam">final_state</span> <span class="op">=</span> <span class="nam">State</span><span class="op">.</span><span class="nam">IDLE</span><span class="op">.</span><span class="nam">value</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:465:    <p class="mis show_mis"><span class="n"><a id="t383" href="#t383">383</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">obs</span><span class="op">.</span><span class="nam">error</span><span class="op">(</span><span class="str">&quot;orchestrator&quot;</span><span class="op">,</span> <span class="nam">trace_id</span><span class="op">=</span><span class="nam">cid</span><span class="op">,</span> <span class="nam">data</span><span class="op">=</span><span class="op">{</span><span class="str">&quot;event&quot;</span><span class="op">:</span> <span class="str">&quot;no_order_built&quot;</span><span class="op">}</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:466:    <p class="mis show_mis"><span class="n"><a id="t384" href="#t384">384</a></span><span class="t">            <span class="nam">result</span><span class="op">.</span><span class="nam">errors</span><span class="op">.</span><span class="nam">append</span><span class="op">(</span><span class="str">&quot;no_order_built&quot;</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:471:    <p class="mis show_mis"><span class="n"><a id="t389" href="#t389">389</a></span><span class="t">            <span class="nam">result</span><span class="op">.</span><span class="nam">final_state</span> <span class="op">=</span> <span class="nam">State</span><span class="op">.</span><span class="nam">IDLE</span><span class="op">.</span><span class="nam">value</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:480:    <p class="mis show_mis"><span class="n"><a id="t398" href="#t398">398</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">obs</span><span class="op">.</span><span class="nam">warn</span><span class="op">(</span><span class="str">&quot;orchestrator&quot;</span><span class="op">,</span> <span class="nam">trace_id</span><span class="op">=</span><span class="nam">cid</span><span class="op">,</span> <span class="nam">data</span><span class="op">=</span><span class="op">{</span><span class="str">&quot;event&quot;</span><span class="op">:</span> <span class="str">&quot;validator_rejected&quot;</span><span class="op">,</span> <span class="str">&quot;reason&quot;</span><span class="op">:</span> <span class="nam">reason</span><span class="op">}</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:481:    <p class="mis show_mis"><span class="n"><a id="t399" href="#t399">399</a></span><span class="t">            <span class="nam">repo</span><span class="op">.</span><span class="nam">update_order_status</span><span class="op">(</span><span class="nam">self</span><span class="op">.</span><span class="nam">db</span><span class="op">,</span> <span class="nam">order</span><span class="op">.</span><span class="nam">order_id</span><span class="op">,</span> <span class="nam">OrderStatus</span><span class="op">.</span><span class="nam">REJECTED</span><span class="op">.</span><span class="nam">value</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:482:    <p class="mis show_mis"><span class="n"><a id="t400" href="#t400">400</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">_audit</span><span class="op">(</span><span class="nam">cid</span><span class="op">,</span> <span class="str">&quot;decision_validator&quot;</span><span class="op">,</span> <span class="str">&quot;rejected&quot;</span><span class="op">,</span> <span class="op">{</span><span class="str">&quot;reason&quot;</span><span class="op">:</span> <span class="nam">reason</span><span class="op">}</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:487:    <p class="mis show_mis"><span class="n"><a id="t405" href="#t405">405</a></span><span class="t">            <span class="nam">result</span><span class="op">.</span><span class="nam">final_state</span> <span class="op">=</span> <span class="nam">State</span><span class="op">.</span><span class="nam">IDLE</span><span class="op">.</span><span class="nam">value</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:507:    <p class="run"><span class="n"><a id="t425" href="#t425">425</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">_audit</span><span class="op">(</span><span class="nam">cid</span><span class="op">,</span> <span class="str">&quot;veto&quot;</span><span class="op">,</span> <span class="str">&quot;rejected&quot;</span><span class="op">,</span> <span class="nam">veto</span><span class="op">.</span><span class="nam">to_dict</span><span class="op">(</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:512:    <p class="run"><span class="n"><a id="t430" href="#t430">430</a></span><span class="t">            <span class="nam">result</span><span class="op">.</span><span class="nam">final_state</span> <span class="op">=</span> <span class="nam">State</span><span class="op">.</span><span class="nam">IDLE</span><span class="op">.</span><span class="nam">value</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:521:    <p class="run"><span class="n"><a id="t439" href="#t439">439</a></span><span class="t">            <span class="nam">result</span><span class="op">.</span><span class="nam">final_state</span> <span class="op">=</span> <span class="nam">State</span><span class="op">.</span><span class="nam">IDLE</span><span class="op">.</span><span class="nam">value</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:530:    <p class="run"><span class="n"><a id="t448" href="#t448">448</a></span><span class="t">            <span class="nam">result</span><span class="op">.</span><span class="nam">final_state</span> <span class="op">=</span> <span class="nam">State</span><span class="op">.</span><span class="nam">IDLE</span><span class="op">.</span><span class="nam">value</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:556:    <p class="run"><span class="n"><a id="t474" href="#t474">474</a></span><span class="t">            <span class="nam">repo</span><span class="op">.</span><span class="nam">update_order_status</span><span class="op">(</span><span class="nam">self</span><span class="op">.</span><span class="nam">db</span><span class="op">,</span> <span class="nam">order</span><span class="op">.</span><span class="nam">order_id</span><span class="op">,</span> <span class="nam">OrderStatus</span><span class="op">.</span><span class="nam">REJECTED</span><span class="op">.</span><span class="nam">value</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:561:    <p class="run"><span class="n"><a id="t479" href="#t479">479</a></span><span class="t">            <span class="nam">result</span><span class="op">.</span><span class="nam">final_state</span> <span class="op">=</span> <span class="nam">State</span><span class="op">.</span><span class="nam">IDLE</span><span class="op">.</span><span class="nam">value</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:572:    <p class="mis show_mis"><span class="n"><a id="t490" href="#t490">490</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">obs</span><span class="op">.</span><span class="nam">warn</span><span class="op">(</span><span class="str">&quot;orchestrator&quot;</span><span class="op">,</span> <span class="nam">trace_id</span><span class="op">=</span><span class="nam">cid</span><span class="op">,</span> <span class="nam">data</span><span class="op">=</span><span class="op">{</span><span class="str">&quot;event&quot;</span><span class="op">:</span> <span class="str">&quot;guard_rejected&quot;</span><span class="op">,</span> <span class="str">&quot;reason&quot;</span><span class="op">:</span> <span class="nam">why</span><span class="op">}</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:573:    <p class="mis show_mis"><span class="n"><a id="t491" href="#t491">491</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">_audit</span><span class="op">(</span><span class="nam">cid</span><span class="op">,</span> <span class="str">&quot;execution_guard&quot;</span><span class="op">,</span> <span class="str">&quot;rejected&quot;</span><span class="op">,</span> <span class="op">{</span><span class="str">&quot;reason&quot;</span><span class="op">:</span> <span class="nam">why</span><span class="op">}</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:574:    <p class="mis show_mis"><span class="n"><a id="t492" href="#t492">492</a></span><span class="t">            <span class="nam">repo</span><span class="op">.</span><span class="nam">update_order_status</span><span class="op">(</span><span class="nam">self</span><span class="op">.</span><span class="nam">db</span><span class="op">,</span> <span class="nam">order</span><span class="op">.</span><span class="nam">order_id</span><span class="op">,</span> <span class="nam">OrderStatus</span><span class="op">.</span><span class="nam">REJECTED</span><span class="op">.</span><span class="nam">value</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:579:    <p class="mis show_mis"><span class="n"><a id="t497" href="#t497">497</a></span><span class="t">            <span class="nam">result</span><span class="op">.</span><span class="nam">final_state</span> <span class="op">=</span> <span class="nam">State</span><span class="op">.</span><span class="nam">IDLE</span><span class="op">.</span><span class="nam">value</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:600:    <p class="run"><span class="n"><a id="t518" href="#t518">518</a></span><span class="t">        <span class="nam">result</span><span class="op">.</span><span class="nam">final_state</span> <span class="op">=</span> <span class="nam">State</span><span class="op">.</span><span class="nam">IDLE</span><span class="op">.</span><span class="nam">value</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html:656:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_f290e8364c0b05ee___init___py.html:5:    <title>Coverage for trader/memory/__init__.py: 100%</title>
+stress_report_20260927_195235/coverage_html/z_f290e8364c0b05ee___init___py.html:8:    <script src="coverage_html_cb_15cffcd0.js" defer></script>
+stress_report_20260927_195235/coverage_html/z_f290e8364c0b05ee___init___py.html:14:            <span class="text">Coverage for </span><b>trader<span class="sep">/</span>memory<span class="sep">/</span>__init__.py</b>:
+stress_report_20260927_195235/coverage_html/z_f290e8364c0b05ee___init___py.html:67:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_f290e8364c0b05ee___init___py.html:108:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_7ee84387da42beb0_repo_py.html:5:    <title>Coverage for trader/storage/repo.py: 77%</title>
+stress_report_20260927_195235/coverage_html/z_7ee84387da42beb0_repo_py.html:8:    <script src="coverage_html_cb_15cffcd0.js" defer></script>
+stress_report_20260927_195235/coverage_html/z_7ee84387da42beb0_repo_py.html:14:            <span class="text">Coverage for </span><b>trader<span class="sep">/</span>storage<span class="sep">/</span>repo.py</b>:
+stress_report_20260927_195235/coverage_html/z_7ee84387da42beb0_repo_py.html:67:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_7ee84387da42beb0_repo_py.html:336:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/.gitignore:1:# Created by coverage.py
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_observability_py.html:5:    <title>Coverage for trader/services/observability.py: 75%</title>
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_observability_py.html:8:    <script src="coverage_html_cb_15cffcd0.js" defer></script>
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_observability_py.html:14:            <span class="text">Coverage for </span><b>trader<span class="sep">/</span>services<span class="sep">/</span>observability.py</b>:
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_observability_py.html:67:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_observability_py.html:105:    <p class="pln"><span class="n"><a id="t23" href="#t23">23</a></span><span class="t"><span class="str">    `level` is one of: debug | info | warn | error.</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_observability_py.html:123:    <p class="run"><span class="n"><a id="t41" href="#t41">41</a></span><span class="t">    <span class="nam">_LEVELS</span> <span class="op">=</span> <span class="op">{</span><span class="str">&quot;debug&quot;</span><span class="op">:</span> <span class="num">0</span><span class="op">,</span> <span class="str">&quot;info&quot;</span><span class="op">:</span> <span class="num">1</span><span class="op">,</span> <span class="str">&quot;warn&quot;</span><span class="op">:</span> <span class="num">2</span><span class="op">,</span> <span class="str">&quot;error&quot;</span><span class="op">:</span> <span class="num">3</span><span class="op">}</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_observability_py.html:167:    <p class="run"><span class="n"><a id="t85" href="#t85">85</a></span><span class="t">    <span class="key">def</span> <span class="nam">error</span><span class="op">(</span><span class="nam">self</span><span class="op">,</span> <span class="nam">component</span><span class="op">:</span> <span class="nam">str</span><span class="op">,</span> <span class="nam">trace_id</span><span class="op">:</span> <span class="nam">str</span><span class="op">,</span> <span class="op">**</span><span class="nam">kw</span><span class="op">)</span> <span class="op">-&gt;</span> <span class="nam">ObservabilityEvent</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_observability_py.html:168:    <p class="run"><span class="n"><a id="t86" href="#t86">86</a></span><span class="t">        <span class="key">return</span> <span class="nam">self</span><span class="op">.</span><span class="nam">emit</span><span class="op">(</span><span class="nam">component</span><span class="op">,</span> <span class="str">&quot;error&quot;</span><span class="op">,</span> <span class="nam">trace_id</span><span class="op">,</span> <span class="op">**</span><span class="nam">kw</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_observability_py.html:177:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_695a31850e99661c_mock_py.html:5:    <title>Coverage for trader/adapters/broker/mock.py: 83%</title>
+stress_report_20260927_195235/coverage_html/z_695a31850e99661c_mock_py.html:8:    <script src="coverage_html_cb_15cffcd0.js" defer></script>
+stress_report_20260927_195235/coverage_html/z_695a31850e99661c_mock_py.html:14:            <span class="text">Coverage for </span><b>trader<span class="sep">/</span>adapters<span class="sep">/</span>broker<span class="sep">/</span>mock.py</b>:
+stress_report_20260927_195235/coverage_html/z_695a31850e99661c_mock_py.html:67:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_695a31850e99661c_mock_py.html:115:    <p class="mis show_mis"><span class="n"><a id="t33" href="#t33">33</a></span><span class="t">            <span class="key">return</span> <span class="nam">BrokerAck</span><span class="op">(</span><span class="nam">ok</span><span class="op">=</span><span class="key">False</span><span class="op">,</span> <span class="nam">status</span><span class="op">=</span><span class="str">&quot;rejected&quot;</span><span class="op">,</span> <span class="nam">reason</span><span class="op">=</span><span class="str">&quot;size&lt;=0&quot;</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_695a31850e99661c_mock_py.html:124:    <p class="mis show_mis"><span class="n"><a id="t42" href="#t42">42</a></span><span class="t">            <span class="key">return</span> <span class="nam">BrokerAck</span><span class="op">(</span><span class="nam">ok</span><span class="op">=</span><span class="key">False</span><span class="op">,</span> <span class="nam">status</span><span class="op">=</span><span class="str">&quot;rejected&quot;</span><span class="op">,</span> <span class="nam">reason</span><span class="op">=</span><span class="str">&quot;no_price&quot;</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_695a31850e99661c_mock_py.html:155:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_5d811546ea6a3102___init___py.html:5:    <title>Coverage for trader/web/__init__.py: 100%</title>
+stress_report_20260927_195235/coverage_html/z_5d811546ea6a3102___init___py.html:8:    <script src="coverage_html_cb_15cffcd0.js" defer></script>
+stress_report_20260927_195235/coverage_html/z_5d811546ea6a3102___init___py.html:14:            <span class="text">Coverage for </span><b>trader<span class="sep">/</span>web<span class="sep">/</span>__init__.py</b>:
+stress_report_20260927_195235/coverage_html/z_5d811546ea6a3102___init___py.html:67:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_5d811546ea6a3102___init___py.html:91:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_context_service_py.html:5:    <title>Coverage for trader/services/context_service.py: 87%</title>
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_context_service_py.html:8:    <script src="coverage_html_cb_15cffcd0.js" defer></script>
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_context_service_py.html:14:            <span class="text">Coverage for </span><b>trader<span class="sep">/</span>services<span class="sep">/</span>context_service.py</b>:
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_context_service_py.html:67:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_context_service_py.html:206:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_309dd348cc86dfff_run_paper_py.html:5:    <title>Coverage for trader/scripts/run_paper.py: 0%</title>
+stress_report_20260927_195235/coverage_html/z_309dd348cc86dfff_run_paper_py.html:8:    <script src="coverage_html_cb_15cffcd0.js" defer></script>
+stress_report_20260927_195235/coverage_html/z_309dd348cc86dfff_run_paper_py.html:14:            <span class="text">Coverage for </span><b>trader<span class="sep">/</span>scripts<span class="sep">/</span>run_paper.py</b>:
+stress_report_20260927_195235/coverage_html/z_309dd348cc86dfff_run_paper_py.html:67:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_309dd348cc86dfff_run_paper_py.html:126:    <p class="mis show_mis"><span class="n"><a id="t44" href="#t44">44</a></span><span class="t">        <span class="nam">print</span><span class="op">(</span><span class="fst">f&quot;</span><span class="fst">[</span><span class="op">{</span><span class="nam">i</span><span class="op">:</span><span class="fst">3d</span><span class="op">}</span><span class="fst">] </span><span class="op">{</span><span class="nam">r</span><span class="op">.</span><span class="nam">cycle_id</span><span class="op">}</span><span class="fst"> final=</span><span class="op">{</span><span class="nam">decision</span><span class="op">:</span><span class="fst">12s</span><span class="op">}</span><span class="fst"> exec=</span><span class="op">{</span><span class="nam">exec_status</span><span class="op">:</span><span class="fst">10s</span><span class="op">}</span><span class="fst"> state=</span><span class="op">{</span><span class="nam">r</span><span class="op">.</span><span class="nam">final_state</span><span class="op">}</span><span class="fst">&quot;</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_309dd348cc86dfff_run_paper_py.html:137:    <p class="mis mis2 show_mis"><span class="n"><a id="t55" href="#t55">55</a></span><span class="t">        <span class="str">&quot;errors&quot;</span><span class="op">:</span> <span class="nam">sum</span><span class="op">(</span><span class="nam">len</span><span class="op">(</span><span class="nam">r</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">&quot;errors&quot;</span><span class="op">,</span> <span class="op">[</span><span class="op">]</span><span class="op">)</span><span class="op">)</span> <span class="key">for</span> <span class="nam">r</span> <span class="key">in</span> <span class="nam">results</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_309dd348cc86dfff_run_paper_py.html:154:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/index.html:5:    <title>Coverage report</title>
+stress_report_20260927_195235/coverage_html/index.html:8:    <script src="coverage_html_cb_15cffcd0.js" defer></script>
+stress_report_20260927_195235/coverage_html/index.html:13:        <h1>Coverage report:
+stress_report_20260927_195235/coverage_html/index.html:56:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/index.html:71:                <th id="coverage" aria-sort="none" data-shortcut="c">coverage<span class="arrows"></span></th>
+stress_report_20260927_195235/coverage_html/index.html:581:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_decision_validator_py.html:5:    <title>Coverage for trader/services/decision_validator.py: 74%</title>
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_decision_validator_py.html:8:    <script src="coverage_html_cb_15cffcd0.js" defer></script>
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_decision_validator_py.html:14:            <span class="text">Coverage for </span><b>trader<span class="sep">/</span>services<span class="sep">/</span>decision_validator.py</b>:
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_decision_validator_py.html:67:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_decision_validator_py.html:148:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250___init___py.html:5:    <title>Coverage for trader/engine/__init__.py: 100%</title>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250___init___py.html:8:    <script src="coverage_html_cb_15cffcd0.js" defer></script>
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250___init___py.html:14:            <span class="text">Coverage for </span><b>trader<span class="sep">/</span>engine<span class="sep">/</span>__init__.py</b>:
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250___init___py.html:67:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250___init___py.html:97:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/class_index.html:5:    <title>Coverage report</title>
+stress_report_20260927_195235/coverage_html/class_index.html:8:    <script src="coverage_html_cb_15cffcd0.js" defer></script>
+stress_report_20260927_195235/coverage_html/class_index.html:13:        <h1>Coverage report:
+stress_report_20260927_195235/coverage_html/class_index.html:57:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/class_index.html:73:                <th id="coverage" aria-sort="none" data-shortcut="c">coverage<span class="arrows"></span></th>
+stress_report_20260927_195235/coverage_html/class_index.html:129:                <td class="name"><a href="z_695a31850e99661c_base_py.html#t38"><data value='BrokerError'>BrokerError</data></a></td>
+stress_report_20260927_195235/coverage_html/class_index.html:1488:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_agent3_py.html:5:    <title>Coverage for trader/services/agent3.py: 77%</title>
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_agent3_py.html:8:    <script src="coverage_html_cb_15cffcd0.js" defer></script>
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_agent3_py.html:14:            <span class="text">Coverage for </span><b>trader<span class="sep">/</span>services<span class="sep">/</span>agent3.py</b>:
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_agent3_py.html:67:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_agent3_py.html:139:    <p class="mis show_mis"><span class="n"><a id="t57" href="#t57">57</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">_obs</span><span class="op">.</span><span class="nam">error</span><span class="op">(</span><span class="nam">self</span><span class="op">.</span><span class="nam">agent_id</span><span class="op">,</span> <span class="nam">trace_id</span><span class="op">=</span><span class="nam">ctx</span><span class="op">.</span><span class="nam">cycle_id</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_agent3_py.html:140:    <p class="mis mis2 show_mis"><span class="n"><a id="t58" href="#t58">58</a></span><span class="t">                            <span class="nam">data</span><span class="op">=</span><span class="op">{</span><span class="str">&quot;event&quot;</span><span class="op">:</span> <span class="str">&quot;invalid_final_output&quot;</span><span class="op">,</span> <span class="str">&quot;error&quot;</span><span class="op">:</span> <span class="nam">str</span><span class="op">(</span><span class="nam">e</span><span class="op">)</span><span class="op">}</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_agent3_py.html:211:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_695a31850e99661c_ccxt_py.html:5:    <title>Coverage for trader/adapters/broker/ccxt.py: 0%</title>
+stress_report_20260927_195235/coverage_html/z_695a31850e99661c_ccxt_py.html:8:    <script src="coverage_html_cb_15cffcd0.js" defer></script>
+stress_report_20260927_195235/coverage_html/z_695a31850e99661c_ccxt_py.html:14:            <span class="text">Coverage for </span><b>trader<span class="sep">/</span>adapters<span class="sep">/</span>broker<span class="sep">/</span>ccxt.py</b>:
+stress_report_20260927_195235/coverage_html/z_695a31850e99661c_ccxt_py.html:67:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_695a31850e99661c_ccxt_py.html:91:    <p class="mis show_mis"><span class="n"><a id="t9" href="#t9">9</a></span><span class="t"><span class="key">from</span> <span class="nam">trader</span><span class="op">.</span><span class="nam">adapters</span><span class="op">.</span><span class="nam">broker</span><span class="op">.</span><span class="nam">base</span> <span class="key">import</span> <span class="nam">BrokerAck</span><span class="op">,</span> <span class="nam">BrokerError</span><span class="op">,</span> <span class="nam">OrderRequest</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_695a31850e99661c_ccxt_py.html:100:    <p class="mis show_mis"><span class="n"><a id="t18" href="#t18">18</a></span><span class="t">        <span class="key">except</span> <span class="nam">ImportError</span> <span class="key">as</span> <span class="nam">e</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_695a31850e99661c_ccxt_py.html:101:    <p class="mis show_mis"><span class="n"><a id="t19" href="#t19">19</a></span><span class="t">            <span class="key">raise</span> <span class="nam">RuntimeError</span><span class="op">(</span><span class="str">&quot;Live execution requires optional dependency: pip install -e &#x27;.[live]&#x27;&quot;</span><span class="op">)</span> <span class="key">from</span> <span class="nam">e</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_695a31850e99661c_ccxt_py.html:106:    <p class="mis show_mis"><span class="n"><a id="t24" href="#t24">24</a></span><span class="t">            <span class="key">raise</span> <span class="nam">ValueError</span><span class="op">(</span><span class="fst">f&quot;</span><span class="fst">Unsupported CCXT exchange: </span><span class="op">{</span><span class="nam">self</span><span class="op">.</span><span class="nam">exchange_name</span><span class="op">}</span><span class="fst">&quot;</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_695a31850e99661c_ccxt_py.html:110:    <p class="mis show_mis"><span class="n"><a id="t28" href="#t28">28</a></span><span class="t">            <span class="key">raise</span> <span class="nam">RuntimeError</span><span class="op">(</span><span class="str">&quot;Live broker requires XIR_API_KEY and XIR_API_SECRET&quot;</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_695a31850e99661c_ccxt_py.html:128:    <p class="mis mis2 show_mis"><span class="n"><a id="t46" href="#t46">46</a></span><span class="t">                             <span class="nam">reason</span><span class="op">=</span><span class="str">&quot;ccxt order accepted&quot;</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_695a31850e99661c_ccxt_py.html:130:    <p class="mis show_mis"><span class="n"><a id="t48" href="#t48">48</a></span><span class="t">            <span class="key">return</span> <span class="nam">BrokerAck</span><span class="op">(</span><span class="nam">ok</span><span class="op">=</span><span class="key">False</span><span class="op">,</span> <span class="nam">status</span><span class="op">=</span><span class="str">&quot;rejected&quot;</span><span class="op">,</span> <span class="nam">reason</span><span class="op">=</span><span class="fst">f&quot;</span><span class="fst">ccxt error: </span><span class="op">{</span><span class="nam">e</span><span class="op">}</span><span class="fst">&quot;</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_695a31850e99661c_ccxt_py.html:146:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_309dd348cc86dfff_run_backtest_py.html:5:    <title>Coverage for trader/scripts/run_backtest.py: 0%</title>
+stress_report_20260927_195235/coverage_html/z_309dd348cc86dfff_run_backtest_py.html:8:    <script src="coverage_html_cb_15cffcd0.js" defer></script>
+stress_report_20260927_195235/coverage_html/z_309dd348cc86dfff_run_backtest_py.html:14:            <span class="text">Coverage for </span><b>trader<span class="sep">/</span>scripts<span class="sep">/</span>run_backtest.py</b>:
+stress_report_20260927_195235/coverage_html/z_309dd348cc86dfff_run_backtest_py.html:67:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_309dd348cc86dfff_run_backtest_py.html:146:    <p class="mis show_mis"><span class="n"><a id="t64" href="#t64">64</a></span><span class="t">        <span class="nam">print</span><span class="op">(</span><span class="fst">f&quot;</span><span class="fst">[bar </span><span class="op">{</span><span class="nam">i</span><span class="op">:</span><span class="fst">3d</span><span class="op">}</span><span class="fst">] </span><span class="op">{</span><span class="nam">r</span><span class="op">.</span><span class="nam">cycle_id</span><span class="op">}</span><span class="fst"> final=</span><span class="op">{</span><span class="nam">decision</span><span class="op">:</span><span class="fst">12s</span><span class="op">}</span><span class="fst"> exec=</span><span class="op">{</span><span class="nam">exec_status</span><span class="op">:</span><span class="fst">10s</span><span class="op">}</span><span class="fst"> state=</span><span class="op">{</span><span class="nam">r</span><span class="op">.</span><span class="nam">final_state</span><span class="op">}</span><span class="fst">&quot;</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_309dd348cc86dfff_run_backtest_py.html:172:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_decision_engine_py.html:5:    <title>Coverage for trader/services/decision_engine.py: 93%</title>
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_decision_engine_py.html:8:    <script src="coverage_html_cb_15cffcd0.js" defer></script>
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_decision_engine_py.html:14:            <span class="text">Coverage for </span><b>trader<span class="sep">/</span>services<span class="sep">/</span>decision_engine.py</b>:
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_decision_engine_py.html:67:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_decision_engine_py.html:156:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_kill_switch_py.html:5:    <title>Coverage for trader/services/kill_switch.py: 62%</title>
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_kill_switch_py.html:8:    <script src="coverage_html_cb_15cffcd0.js" defer></script>
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_kill_switch_py.html:14:            <span class="text">Coverage for </span><b>trader<span class="sep">/</span>services<span class="sep">/</span>kill_switch.py</b>:
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_kill_switch_py.html:67:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_kill_switch_py.html:132:    <p class="run"><span class="n"><a id="t50" href="#t50">50</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">_obs</span><span class="op">.</span><span class="nam">emit</span><span class="op">(</span><span class="str">&quot;kill_switch&quot;</span><span class="op">,</span> <span class="str">&quot;error&quot;</span><span class="op">,</span> <span class="nam">trace_id</span><span class="op">=</span><span class="str">&quot;kill_switch&quot;</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_kill_switch_py.html:174:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_agent2_py.html:5:    <title>Coverage for trader/services/agent2.py: 82%</title>
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_agent2_py.html:8:    <script src="coverage_html_cb_15cffcd0.js" defer></script>
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_agent2_py.html:14:            <span class="text">Coverage for </span><b>trader<span class="sep">/</span>services<span class="sep">/</span>agent2.py</b>:
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_agent2_py.html:67:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_agent2_py.html:148:    <p class="mis show_mis"><span class="n"><a id="t66" href="#t66">66</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">_obs</span><span class="op">.</span><span class="nam">error</span><span class="op">(</span><span class="nam">self</span><span class="op">.</span><span class="nam">agent_id</span><span class="op">,</span> <span class="nam">trace_id</span><span class="op">=</span><span class="nam">ctx</span><span class="op">.</span><span class="nam">cycle_id</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_agent2_py.html:149:    <p class="mis mis2 show_mis"><span class="n"><a id="t67" href="#t67">67</a></span><span class="t">                            <span class="nam">data</span><span class="op">=</span><span class="op">{</span><span class="str">&quot;event&quot;</span><span class="op">:</span> <span class="str">&quot;invalid_failure_report&quot;</span><span class="op">,</span> <span class="str">&quot;error&quot;</span><span class="op">:</span> <span class="nam">str</span><span class="op">(</span><span class="nam">e</span><span class="op">)</span><span class="op">}</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_agent2_py.html:297:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_695a31850e99661c_base_py.html:5:    <title>Coverage for trader/adapters/broker/base.py: 100%</title>
+stress_report_20260927_195235/coverage_html/z_695a31850e99661c_base_py.html:8:    <script src="coverage_html_cb_15cffcd0.js" defer></script>
+stress_report_20260927_195235/coverage_html/z_695a31850e99661c_base_py.html:14:            <span class="text">Coverage for </span><b>trader<span class="sep">/</span>adapters<span class="sep">/</span>broker<span class="sep">/</span>base.py</b>:
+stress_report_20260927_195235/coverage_html/z_695a31850e99661c_base_py.html:67:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage_html/z_695a31850e99661c_base_py.html:116:    <p class="run"><span class="n"><a id="t34" href="#t34">34</a></span><span class="t">    <span class="nam">status</span><span class="op">:</span> <span class="nam">str</span> <span class="op">=</span> <span class="str">&quot;&quot;</span>    <span class="com"># &quot;filled&quot; | &quot;submitted&quot; | &quot;rejected&quot;</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_695a31850e99661c_base_py.html:120:    <p class="run"><span class="n"><a id="t38" href="#t38">38</a></span><span class="t"><span class="key">class</span> <span class="nam">BrokerError</span><span class="op">(</span><span class="nam">Exception</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+stress_report_20260927_195235/coverage_html/z_695a31850e99661c_base_py.html:140:            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+stress_report_20260927_195235/coverage.out:9:================================ tests coverage ================================
+stress_report_20260927_195235/coverage.out:10:_______________ coverage: platform linux, python 3.13.12-final-0 _______________
+stress_report_20260927_195235/coverage.out:70:Coverage HTML written to dir /home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html
+stress_report_20260927_195235/database_report.txt:36:INTEGRITY:
+stress_report_20260927_195235/full.log:66: 2 — TEST SUITE / COVERAGE
+stress_report_20260927_195235/full.log:74:[COVERAGE]
+stress_report_20260927_195235/full.log:83:================================ tests coverage ================================
+stress_report_20260927_195235/full.log:84:_______________ coverage: platform linux, python 3.13.12-final-0 _______________
+stress_report_20260927_195235/full.log:144:Coverage HTML written to dir /home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html
+stress_report_20260927_195235/full.log:154:[FAIL] cli_market_mock
+stress_report_20260927_195235/full.log:155:ERROR: market data request failed: <urlopen error [Errno 101] Network is unreachable>
+stress_report_20260927_195235/full.log:232:INTEGRITY:
+stress_report_20260927_195235/full.log:245:Traceback (most recent call last):
+stress_report_20260927_195235/full.log:247:ModuleNotFoundError: No module named 'trader.orchestrator'
+stress_report_20260927_195235/full.log:253:Traceback (most recent call last):
+stress_report_20260927_195235/full.log:255:ModuleNotFoundError: No module named 'trader.orchestrator'
+stress_report_20260927_195235/full.log:261:multiprocessing.pool.RemoteTraceback: 
+stress_report_20260927_195235/full.log:263:Traceback (most recent call last):
+stress_report_20260927_195235/full.log:270:ModuleNotFoundError: No module named 'trader.orchestrator'
+stress_report_20260927_195235/full.log:275:Traceback (most recent call last):
+stress_report_20260927_195235/full.log:282:ModuleNotFoundError: No module named 'trader.orchestrator'
+stress_report_20260927_195235/full.log:288:Traceback (most recent call last):
+stress_report_20260927_195235/full.log:290:ModuleNotFoundError: No module named 'trader.orchestrator'
+stress_report_20260927_195235/full.log:296:valid REJECTED ValidationError
+stress_report_20260927_195235/full.log:297:bad_ohlc REJECTED ValidationError
+stress_report_20260927_195235/full.log:298:negative_volume REJECTED ValidationError
+stress_report_20260927_195235/full.log:299:negative_equity REJECTED ValidationError
+stress_report_20260927_195235/full.log:300:bad_completeness REJECTED ValidationError
+stress_report_20260927_195235/full.log:306:Traceback (most recent call last):
+stress_report_20260927_195235/full.log:308:ModuleNotFoundError: No module named 'trader.orchestrator'
+stress_report_20260927_195235/full.log:314:Traceback (most recent call last):
+stress_report_20260927_195235/full.log:328:AttributeError: 'Namespace' object has no attribute 'symbol'
+stress_report_20260927_195235/full.log:329:Traceback (most recent call last):
+stress_report_20260927_195235/full.log:343:AttributeError: 'Namespace' object has no attribute 'symbol'
+stress_report_20260927_195235/full.log:351:/api/market ERROR TimeoutError('timed out')
+stress_report_20260927_195235/full.log:365:200 = 100
+stress_report_20260927_195235/full.log:366:errors = 0
+stress_report_20260927_195235/full.log:372:db_bytes = 1171456
+stress_report_20260927_195235/full.log:613:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/class_index.html
+stress_report_20260927_195235/full.log:614:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/coverage_html_cb_15cffcd0.js
+stress_report_20260927_195235/full.log:615:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/favicon_32_cb_c827f16f.png
+stress_report_20260927_195235/full.log:616:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/function_index.html
+stress_report_20260927_195235/full.log:617:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/.gitignore
+stress_report_20260927_195235/full.log:618:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/index.html
+stress_report_20260927_195235/full.log:619:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/keybd_closed_cb_900cfef5.png
+stress_report_20260927_195235/full.log:620:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/status.json
+stress_report_20260927_195235/full.log:621:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/style_cb_4667309f.css
+stress_report_20260927_195235/full.log:622:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_0717818b581bf771_cli_py.html
+stress_report_20260927_195235/full.log:623:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_0717818b581bf771___init___py.html
+stress_report_20260927_195235/full.log:624:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_0717818b581bf771_knowledge_py.html
+stress_report_20260927_195235/full.log:625:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_0717818b581bf771_research_py.html
+stress_report_20260927_195235/full.log:626:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_16302e952ddb91ca_config_py.html
+stress_report_20260927_195235/full.log:627:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_16302e952ddb91ca___init___py.html
+stress_report_20260927_195235/full.log:628:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_16302e952ddb91ca_invariants_py.html
+stress_report_20260927_195235/full.log:629:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_16302e952ddb91ca_schemas_py.html
+stress_report_20260927_195235/full.log:630:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_16302e952ddb91ca_state_machine_py.html
+stress_report_20260927_195235/full.log:631:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_16302e952ddb91ca_util_py.html
+stress_report_20260927_195235/full.log:632:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_309dd348cc86dfff___init___py.html
+stress_report_20260927_195235/full.log:633:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_309dd348cc86dfff_run_backtest_py.html
+stress_report_20260927_195235/full.log:634:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_309dd348cc86dfff_run_demo_py.html
+stress_report_20260927_195235/full.log:635:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_309dd348cc86dfff_run_paper_py.html
+stress_report_20260927_195235/full.log:636:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_309dd348cc86dfff_run_research_py.html
+stress_report_20260927_195235/full.log:637:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_5d811546ea6a3102___init___py.html
+stress_report_20260927_195235/full.log:638:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_5d811546ea6a3102_server_py.html
+stress_report_20260927_195235/full.log:639:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_695a31850e99661c_base_py.html
+stress_report_20260927_195235/full.log:640:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_695a31850e99661c_ccxt_py.html
+stress_report_20260927_195235/full.log:641:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_695a31850e99661c___init___py.html
+stress_report_20260927_195235/full.log:642:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_695a31850e99661c_mock_py.html
+stress_report_20260927_195235/full.log:643:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_7ee84387da42beb0_connection_py.html
+stress_report_20260927_195235/full.log:644:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_7ee84387da42beb0___init___py.html
+stress_report_20260927_195235/full.log:645:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_7ee84387da42beb0_repo_py.html
+stress_report_20260927_195235/full.log:646:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_7ee84387da42beb0_schema_py.html
+stress_report_20260927_195235/full.log:647:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_c8de8a5f1030574c_binance_py.html
+stress_report_20260927_195235/full.log:648:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_c8de8a5f1030574c___init___py.html
+stress_report_20260927_195235/full.log:649:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_agent1_py.html
+stress_report_20260927_195235/full.log:650:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_agent2_py.html
+stress_report_20260927_195235/full.log:651:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_agent3_py.html
+stress_report_20260927_195235/full.log:652:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_agent_base_py.html
+stress_report_20260927_195235/full.log:653:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_context_service_py.html
+stress_report_20260927_195235/full.log:654:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_data_reader_py.html
+stress_report_20260927_195235/full.log:655:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_decision_engine_py.html
+stress_report_20260927_195235/full.log:656:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_decision_validator_py.html
+stress_report_20260927_195235/full.log:657:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_execution_guard_py.html
+stress_report_20260927_195235/full.log:658:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_final_tools_py.html
+stress_report_20260927_195235/full.log:659:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126___init___py.html
+stress_report_20260927_195235/full.log:660:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_kill_switch_py.html
+stress_report_20260927_195235/full.log:661:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_message_service_py.html
+stress_report_20260927_195235/full.log:662:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_metrics_py.html
+stress_report_20260927_195235/full.log:663:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_observability_py.html
+stress_report_20260927_195235/full.log:664:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_position_sizer_py.html
+stress_report_20260927_195235/full.log:665:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_risk_engine_py.html
+stress_report_20260927_195235/full.log:666:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_cc3d45e32aac7126_super_agent_py.html
+stress_report_20260927_195235/full.log:667:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250___init___py.html
+stress_report_20260927_195235/full.log:668:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_d42da1ef1b46b250_orchestrator_py.html
+stress_report_20260927_195235/full.log:669:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_e8c023c1ccd3fd75___init___py.html
+stress_report_20260927_195235/full.log:670:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_e8c023c1ccd3fd75_llm_py.html
+stress_report_20260927_195235/full.log:671:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_e8c023c1ccd3fd75_source_connector_py.html
+stress_report_20260927_195235/full.log:672:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_f290e8364c0b05ee_db_manager_py.html
+stress_report_20260927_195235/full.log:673:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_f290e8364c0b05ee___init___py.html
+stress_report_20260927_195235/full.log:674:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_f290e8364c0b05ee_manager_py.html
+stress_report_20260927_195235/full.log:675:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html/z_f290e8364c0b05ee_stores_py.html
+stress_report_20260927_195235/full.log:676:/home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage.out
+stress_report_20260927_195235/resource_report.txt:1:db_bytes = 1171456
+stress_report_20260927_195235/validation_audit.txt:1:valid REJECTED ValidationError
+stress_report_20260927_195235/validation_audit.txt:2:bad_ohlc REJECTED ValidationError
+stress_report_20260927_195235/validation_audit.txt:3:negative_volume REJECTED ValidationError
+stress_report_20260927_195235/validation_audit.txt:4:negative_equity REJECTED ValidationError
+stress_report_20260927_195235/validation_audit.txt:5:bad_completeness REJECTED ValidationError
+stress_report_20260927_195235/web_api_audit.txt:3:/api/market ERROR TimeoutError('timed out')
+                                                                                                                   
+┌──(.venv)─(moeid㉿kali)-[~/Desktop/15/FINAL]
+└─$ 
+
+کد نهایی رو دیباگ شده و تسست شده بده و روش تستش رو بده کامل کامل و نهایی باید باشه
+
+                                                                                                                   
+┌──(.venv)─(moeid㉿kali)-[~/Desktop/14/FINAL]
+└─$ source .venv/bin/activate && pytest -q --tb=short; rc=$?; total=$(pytest --collect-only -q 2>/dev/null | tail -1 | grep -oE '[0-9]+' | head -1); failed=$(pytest --collect-only -q 2>/dev/null | grep -oE '[0-9]+ failed' | grep -oE '[0-9]+' | head -1); echo "EXIT_CODE=$rc"
+..........................................F...........................................F                     [100%]
+==================================================== FAILURES =====================================================
+________________________________ test_openapi_exposes_professional_manual_contract ________________________________
+tests/test_manual_snapshot_v32.py:76: in test_openapi_exposes_professional_manual_contract
+    spec = client.get("/openapi.json").json()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.13/site-packages/httpx/_client.py:1053: in get
+    return self.request(
+.venv/lib/python3.13/site-packages/starlette/testclient.py:463: in request
+    return super().request(
+.venv/lib/python3.13/site-packages/httpx/_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.13/site-packages/httpx/_client.py:914: in send
+    response = self._send_handling_auth(
+.venv/lib/python3.13/site-packages/httpx/_client.py:942: in _send_handling_auth
+    response = self._send_handling_redirects(
+.venv/lib/python3.13/site-packages/httpx/_client.py:979: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.13/site-packages/httpx/_client.py:1014: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.13/site-packages/starlette/testclient.py:360: in handle_request
+    raise exc
+.venv/lib/python3.13/site-packages/starlette/testclient.py:357: in handle_request
+    portal.call(self.app, scope, receive, send)
+.venv/lib/python3.13/site-packages/anyio/from_thread.py:340: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.13/concurrent/futures/_base.py:456: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.13/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+.venv/lib/python3.13/site-packages/anyio/from_thread.py:265: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.13/site-packages/fastapi/applications.py:1163: in __call__
+    await super().__call__(scope, receive, send)
+.venv/lib/python3.13/site-packages/starlette/applications.py:96: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib/python3.13/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+.venv/lib/python3.13/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv/lib/python3.13/site-packages/starlette/middleware/cors.py:91: in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+.venv/lib/python3.13/site-packages/starlette/middleware/cors.py:149: in simple_response
+    await self.app(scope, receive, send)
+.venv/lib/python3.13/site-packages/starlette/middleware/exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv/lib/python3.13/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib/python3.13/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib/python3.13/site-packages/fastapi/middleware/asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv/lib/python3.13/site-packages/starlette/routing.py:676: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib/python3.13/site-packages/fastapi/routing.py:2734: in app
+    await route.handle(scope, receive, send)
+.venv/lib/python3.13/site-packages/starlette/routing.py:282: in handle
+    await self.app(scope, receive, send)
+.venv/lib/python3.13/site-packages/starlette/routing.py:65: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv/lib/python3.13/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib/python3.13/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib/python3.13/site-packages/starlette/routing.py:62: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+.venv/lib/python3.13/site-packages/fastapi/applications.py:1110: in openapi
+    schema = self.openapi()
+             ^^^^^^^^^^^^^^
+.venv/lib/python3.13/site-packages/fastapi/applications.py:1086: in openapi
+    self.openapi_schema = get_openapi(
+.venv/lib/python3.13/site-packages/fastapi/openapi/utils.py:623: in get_openapi
+    field_mapping, definitions = get_definitions(
+.venv/lib/python3.13/site-packages/fastapi/_compat/v2.py:336: in get_definitions
+    field_mapping, definitions = schema_generator.generate_definitions(inputs=inputs)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.13/site-packages/pydantic/json_schema.py:386: in generate_definitions
+    self.generate_inner(schema)
+.venv/lib/python3.13/site-packages/pydantic/json_schema.py:466: in generate_inner
+    if 'ref' in schema:
+       ^^^^^^^^^^^^^^^
+<frozen _collections_abc>:817: in __contains__
+    ???
+.venv/lib/python3.13/site-packages/pydantic/_internal/_mock_val_ser.py:41: in __getitem__
+    return self._get_built().__getitem__(key)
+           ^^^^^^^^^^^^^^^^^
+.venv/lib/python3.13/site-packages/pydantic/_internal/_mock_val_ser.py:58: in _get_built
+    raise PydanticUserError(self._error_message, code=self._code)
+E   pydantic.errors.PydanticUserError: `TypeAdapter[typing.Annotated[ForwardRef('LLMSelectRequest'), FieldInfo(annotation=NoneType, required=True, alias='req', alias_priority=2, json_schema_extra={})]]` is not fully defined; you should define `typing.Annotated[ForwardRef('LLMSelectRequest'), FieldInfo(annotation=NoneType, required=True, alias='req', alias_priority=2, json_schema_extra={})]` and all referenced types, then call `.rebuild()` on the instance. 
+E   
+E   For further information visit https://errors.pydantic.dev/2.13/u/class-not-fully-defined
+______________________________________ test_web_contract_and_manual_analysis ______________________________________
+tests/test_web_control_plane.py:9: in test_web_contract_and_manual_analysis
+    assert client.get("/openapi.json").status_code == 200
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.13/site-packages/httpx/_client.py:1053: in get
+    return self.request(
+.venv/lib/python3.13/site-packages/starlette/testclient.py:463: in request
+    return super().request(
+.venv/lib/python3.13/site-packages/httpx/_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.13/site-packages/httpx/_client.py:914: in send
+    response = self._send_handling_auth(
+.venv/lib/python3.13/site-packages/httpx/_client.py:942: in _send_handling_auth
+    response = self._send_handling_redirects(
+.venv/lib/python3.13/site-packages/httpx/_client.py:979: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.13/site-packages/httpx/_client.py:1014: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.13/site-packages/starlette/testclient.py:360: in handle_request
+    raise exc
+.venv/lib/python3.13/site-packages/starlette/testclient.py:357: in handle_request
+    portal.call(self.app, scope, receive, send)
+.venv/lib/python3.13/site-packages/anyio/from_thread.py:340: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.13/concurrent/futures/_base.py:456: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.13/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+.venv/lib/python3.13/site-packages/anyio/from_thread.py:265: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.13/site-packages/fastapi/applications.py:1163: in __call__
+    await super().__call__(scope, receive, send)
+.venv/lib/python3.13/site-packages/starlette/applications.py:96: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib/python3.13/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+.venv/lib/python3.13/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv/lib/python3.13/site-packages/starlette/middleware/cors.py:91: in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+.venv/lib/python3.13/site-packages/starlette/middleware/cors.py:149: in simple_response
+    await self.app(scope, receive, send)
+.venv/lib/python3.13/site-packages/starlette/middleware/exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv/lib/python3.13/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib/python3.13/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib/python3.13/site-packages/fastapi/middleware/asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv/lib/python3.13/site-packages/starlette/routing.py:676: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib/python3.13/site-packages/fastapi/routing.py:2734: in app
+    await route.handle(scope, receive, send)
+.venv/lib/python3.13/site-packages/starlette/routing.py:282: in handle
+    await self.app(scope, receive, send)
+.venv/lib/python3.13/site-packages/starlette/routing.py:65: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv/lib/python3.13/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib/python3.13/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib/python3.13/site-packages/starlette/routing.py:62: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+.venv/lib/python3.13/site-packages/fastapi/applications.py:1110: in openapi
+    schema = self.openapi()
+             ^^^^^^^^^^^^^^
+.venv/lib/python3.13/site-packages/fastapi/applications.py:1086: in openapi
+    self.openapi_schema = get_openapi(
+.venv/lib/python3.13/site-packages/fastapi/openapi/utils.py:623: in get_openapi
+    field_mapping, definitions = get_definitions(
+.venv/lib/python3.13/site-packages/fastapi/_compat/v2.py:336: in get_definitions
+    field_mapping, definitions = schema_generator.generate_definitions(inputs=inputs)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.13/site-packages/pydantic/json_schema.py:386: in generate_definitions
+    self.generate_inner(schema)
+.venv/lib/python3.13/site-packages/pydantic/json_schema.py:466: in generate_inner
+    if 'ref' in schema:
+       ^^^^^^^^^^^^^^^
+<frozen _collections_abc>:817: in __contains__
+    ???
+.venv/lib/python3.13/site-packages/pydantic/_internal/_mock_val_ser.py:41: in __getitem__
+    return self._get_built().__getitem__(key)
+           ^^^^^^^^^^^^^^^^^
+.venv/lib/python3.13/site-packages/pydantic/_internal/_mock_val_ser.py:58: in _get_built
+    raise PydanticUserError(self._error_message, code=self._code)
+E   pydantic.errors.PydanticUserError: `TypeAdapter[typing.Annotated[ForwardRef('LLMSelectRequest'), FieldInfo(annotation=NoneType, required=True, alias='req', alias_priority=2, json_schema_extra={})]]` is not fully defined; you should define `typing.Annotated[ForwardRef('LLMSelectRequest'), FieldInfo(annotation=NoneType, required=True, alias='req', alias_priority=2, json_schema_extra={})]` and all referenced types, then call `.rebuild()` on the instance. 
+E   
+E   For further information visit https://errors.pydantic.dev/2.13/u/class-not-fully-defined
+================================================ warnings summary =================================================
+.venv/lib/python3.13/site-packages/fastapi/testclient.py:1
+  /home/moeid/Desktop/14/FINAL/.venv/lib/python3.13/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+============================================= short test summary info =============================================
+FAILED tests/test_manual_snapshot_v32.py::test_openapi_exposes_professional_manual_contract - pydantic.errors.PydanticUserError: `TypeAdapter[typing.Annotated[ForwardRef('LLMSelectRequest'), FieldInfo(ann...
+FAILED tests/test_web_control_plane.py::test_web_contract_and_manual_analysis - pydantic.errors.PydanticUserError: `TypeAdapter[typing.Annotated[ForwardRef('LLMSelectRequest'), FieldInfo(ann...
+EXIT_CODE=1
+                                                                                                                   
+┌──(.venv)─(moeid㉿kali)-[~/Desktop/14/FINAL]
+└─$ 
+
+
+خب ببین میخوام نسخه ی نهایی رو بسازی و اماده سازی های لازم رو برای هر چیزی بکنی 
+مثلا 
+اگر روزی خواستم با ollama از local llm استفاده کنم گذینش وجود داشته باشه و بتونم این کارو بکنم یا حتی api و باقی روش های وصل شدن به ai و روشی که الان استفاده کری باید بتونم بینشون سوئیچ کنم 
+تمام نقاطی که نیاز به اتصال به بیرون داره رو باید بسترش رو اماده کنی که من فقط api یا در بدترین شرایط ممکن url یا لینک سورس رو بهش بدم و اون بره توش مطالعه و تحقیق بکنه 
+ببین تمام پیشبینی های لازم رو انجام بده و خروجیی بهم بده که تا ۱۰۰ سال اینده رو دستش نیاد 
+حتی کوچیکترین چیز هاییم که به نظرت میرسه یه روزی نیاز میشه رو پیشبینی کن و از الان بسازش و توی پنل مدیریت یک بخش مخصوص برای هر کدوم تعبیه کن 
+پنل مدیریت و cli رو هم باز طراحی کن و حرفه ای شون  کن این خیلی به دلم ننشسته 
+https://github.com/freshtechbro/claudedesignskills.git
+این ریپو هم برای skill 
+
+ببین خروجیی میخوام ازت که ۱۰۰ هزار دلار واقعی قیمت بخوره نه فقط ادعا 
+پس کل ابرو و اعتبار و اسمم رو به تو سپردم 
+سربلندم کن
+
+اینا نسخه های مختلف از یک پروژه هستند 
+همشونو ترکیب کن و نسخه ی نهایی رو تست شده و دیباگ شده اماده ی عرضه بهم بده 
+
+ببنی میخوام باز طراحی و بشه 
+این قراره یم ربات اتومات تریدر باشه 
+در سطح خیلی بالا نه فقط یک ماشین صفر و یکی باید یک سیستم هوشمند و چند لایه ی سطح بالا باشه 
+تبدیلش کن به نهاییترین نسخه ی ممکن و خروجی نهایی رو بهم بده 
+ببین باید پروژه به جایی برسه که تضمین کنی و خودم هم تست کنم و به این نتیجه برسم که 
+این ربات میتونه سبانه روز و ۲۴ / ۷ کار بکنه و صد در صد سود ده باشه 
+دسترسی به تمام بزرگترین سورس های جهان توی ترید داشته باشه و کوچیکترین چیزی که مبهم بود براش رو از توی سورس ها سرچ بزنه
+
+

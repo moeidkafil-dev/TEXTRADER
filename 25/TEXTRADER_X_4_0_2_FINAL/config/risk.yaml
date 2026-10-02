@@ -1,0 +1,38 @@
+# Risk Engine configuration — chapter 07 RISK_ENGINE.md
+# All 11 rules are deterministic numeric checks (REQ-P-03).
+# Agents have NO write access to this file (chapter 09 SECURITY_MODEL).
+
+risk:
+  # 1. Position Size — REQ-RSK-01
+  max_position_size: 1000.0          # max units per order
+
+  # 2. Max Daily Loss — REQ-RSK-02
+  max_daily_loss: 0.02                # 2% of equity
+
+  # 3. Max Drawdown — REQ-RSK-03
+  max_drawdown: 0.10                  # 10% of peak equity
+
+  # 4. Exposure Limit — REQ-RSK-04
+  exposure_limit: 0.50                # max fraction of equity at risk in one order
+
+  # 5. Leverage Limit — REQ-RSK-05
+  leverage_limit: 1.0                  # 1.0 = no leverage
+
+  # 6. Stop Loss Validation — REQ-RSK-06
+  require_stop_loss: true
+
+  # 7. Take Profit Validation — REQ-RSK-07
+  require_take_profit: true
+
+  # 8. Correlation Exposure — REQ-RSK-08
+  max_correlation: 0.85                # pairwise correlation cap
+
+  # 9. Portfolio Exposure — REQ-RSK-09
+  max_portfolio_exposure: 0.75        # total exposure as fraction of equity
+
+  # 10. Trading Session Rules — REQ-RSK-10
+  trading_sessions:
+    - "00:00-23:59"                    # 24h for paper/backtest
+
+  # 11. Emergency Kill Switch — REQ-RSK-11
+  kill_switch: false                  # if true at load ⇒ HALTED on startup

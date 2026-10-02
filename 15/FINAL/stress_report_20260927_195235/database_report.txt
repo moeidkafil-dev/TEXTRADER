@@ -1,0 +1,43 @@
+DATABASE: data/trader.db
+SIZE: 1171456
+
+TABLES:
+  audit_log
+  contexts
+  cycles
+  data_bundles
+  decisions
+  failure_paths
+  memory_items
+  observability_events
+  orders
+  portfolio_state
+  risk_results
+  sqlite_sequence
+  state_machine_log
+  veto_events
+
+COUNTS:
+audit_log                 442
+contexts                  45
+cycles                    45
+data_bundles              246
+decisions                 131
+failure_paths             387
+memory_items              30
+observability_events      2119
+orders                    35
+portfolio_state           14
+risk_results              385
+sqlite_sequence           7
+state_machine_log         392
+veto_events               35
+
+INTEGRITY:
+ok
+
+FOREIGN KEYS:
+[]
+
+JOURNAL:
+wal

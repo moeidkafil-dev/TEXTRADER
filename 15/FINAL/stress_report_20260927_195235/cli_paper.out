@@ -1,0 +1,10 @@
+[1/10] cycle=cyc_3e7562029d6a state=IDLE decision=BUY errors=0
+[2/10] cycle=cyc_4eef99b7f3d9 state=IDLE decision=WAIT errors=0
+[3/10] cycle=cyc_aa23fbe7d844 state=IDLE decision=BUY errors=0
+[4/10] cycle=cyc_5733e6367aa4 state=IDLE decision=WAIT errors=0
+[5/10] cycle=cyc_207ecd340923 state=IDLE decision=BUY errors=0
+[6/10] cycle=cyc_c80a90755758 state=IDLE decision=WAIT errors=0
+[7/10] cycle=cyc_c6c2305ca619 state=IDLE decision=BUY errors=0
+[8/10] cycle=cyc_dd428236d638 state=IDLE decision=WAIT errors=0
+[9/10] cycle=cyc_c798540e75ef state=IDLE decision=BUY errors=0
+[10/10] cycle=cyc_23fe8bb58754 state=IDLE decision=BUY errors=0

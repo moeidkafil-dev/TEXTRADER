@@ -1,0 +1,29 @@
+{
+  "symbol": "BTC/USDT",
+  "ticker": {
+    "category": "SPOT",
+    "symbol": "BTCUSDT",
+    "ts": "1790790545045",
+    "lastPrice": "84112.75",
+    "openPrice24h": "83065.81",
+    "highPrice24h": "85643.47",
+    "lowPrice24h": "82956.58",
+    "ask1Price": "84112.75",
+    "bid1Price": "84112.74",
+    "bid1Size": "0.119231",
+    "ask1Size": "0.248527",
+    "price24hPcnt": "0.0126",
+    "volume24h": "2774.74427",
+    "turnover24h": "232929495.737916",
+    "platformTurnover24h": ""
+  },
+  "best_bid": [
+    84112.74,
+    0.071331
+  ],
+  "best_ask": [
+    84112.75,
+    0.254472
+  ],
+  "bars": 10
+}

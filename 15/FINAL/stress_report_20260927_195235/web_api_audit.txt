@@ -1,0 +1,10 @@
+/ 200 b'<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">\n<title>TEXTRADER X \xe2\x80\x94 Intelligence Control Center</title>\n<style>\n:root'
+/api/health 200 b'{"status":"ok","service":"textrader-control-plane","version":"4.0.0","state":"IDLE","kill_switch":{"active":false,"reason":"","activated_at":null},"history_size":0}'
+/api/market ERROR TimeoutError('timed out')
+/api/runs 200 b'{"runs":[]}'
+/api/config 200 b'{"risk":{"max_position_size":1000.0,"max_daily_loss":0.02,"max_drawdown":0.1,"exposure_limit":0.5,"leverage_limit":1.0,"require_stop_loss":true,"require_take_profit":true,"max_correlation":0.85,"max_p'
+/api/llm/providers 200 b'{"active":"mock","available":["anthropic","mock","ollama","openai"]}'
+/api/connectors 200 b'{}'
+/api/modules 200 b'{"modules":[{"id":"overview","label":"Overview","status":"active"},{"id":"cycle","label":"Run Cycle","status":"active"},{"id":"history","label":"History","status":"active"},{"id":"risk","label":"Risk '
+/docs 200 b'\n    <!DOCTYPE html>\n    <html>\n    <head>\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swag'
+/openapi.json 200 b'{"openapi":"3.1.0","info":{"title":"TEXTRADER X Control Plane","description":"Auditable admin/control plane for autonomous trading analysis.","version":"4.0.0"},"paths":{"/api/health":{"get":{"summary'

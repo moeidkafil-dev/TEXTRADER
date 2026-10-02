@@ -1,0 +1,9 @@
+db_bytes = 1171456
+cycles 45
+data_bundles 246
+decisions 131
+orders 35
+risk_results 385
+audit_log 442
+observability_events 2119
+state_machine_log 392

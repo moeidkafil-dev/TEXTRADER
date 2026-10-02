@@ -1,0 +1,5 @@
+{
+  "provider": "mock",
+  "ok": true,
+  "sample": "{\"digest\": \"9b05a6289408d112\", \"system_tag\": \"Reply with exactly one word.\", \"us"
+}

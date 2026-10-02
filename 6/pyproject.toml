@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "trader-xir"
+version = "2.0.1"
+description = "TRADER/XIR — production trading runtime with real market data, CLI, web control center and fail-closed execution"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "Proprietary"}
+dependencies = [
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+]
+live = [
+    "ccxt>=4.0",
+]
+
+[project.scripts]
+trader-paper = "trader.scripts.run_paper:main"
+trader-backtest = "trader.scripts.run_backtest:main"
+trader-demo = "trader.scripts.run_demo:main"
+xir = "trader.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["trader*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-ra -q --tb=short"
+
+[tool.setuptools.package-data]
+trader = ["web/static/*.html"]

@@ -1,0 +1,5 @@
+ERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]
+__main__.py: error: unrecognized arguments: --cov=trader --cov-report=term-missing --cov-report=json:/home/moeid/Desktop/TEXTRADER_FORENSIC_AUDIT_20260927_211420/raw/coverage.json --cov-report=html:/home/moeid/Desktop/TEXTRADER_FORENSIC_AUDIT_20260927_211420/raw/coverage_html
+  inifile: /home/moeid/Desktop/17/TEXTRADER_X_4_0_0_FIXED/pyproject.toml
+  rootdir: /home/moeid/Desktop/17/TEXTRADER_X_4_0_0_FIXED
+

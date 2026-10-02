@@ -1,0 +1,18 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/trader/cli.py", line 313, in <module>
+    main()
+    ~~~~^^
+  File "/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/trader/cli.py", line 309, in main
+    raise SystemExit(args.func(args))
+                     ~~~~~~~~~^^^^^^
+  File "/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/trader/cli.py", line 85, in cmd_analyze
+    o = _build_orchestrator(args)
+  File "/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/trader/cli.py", line 27, in _build_orchestrator
+    rc = load_risk_config(Path(args.risk) if getattr(args, "risk", None) else None)
+  File "/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/trader/core/config.py", line 129, in load_risk_config
+    data = load_yaml(c)
+  File "/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/trader/core/config.py", line 110, in load_yaml
+    raise RuntimeError("PyYAML not installed; install with: pip install pyyaml")
+RuntimeError: PyYAML not installed; install with: pip install pyyaml

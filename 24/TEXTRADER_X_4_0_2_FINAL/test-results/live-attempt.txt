@@ -1,0 +1,1 @@
+ERROR: Bitget release source is read-only; use --mode paper or --decision-only.

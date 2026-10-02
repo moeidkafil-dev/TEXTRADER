@@ -1,0 +1,14 @@
+PRESENT trader/engine/orchestrator.py
+PRESENT trader/services/risk_engine.py
+PRESENT trader/services/kill_switch.py
+PRESENT trader/services/execution_guard.py
+PRESENT trader/services/position_sizer.py
+PRESENT trader/services/decision_engine.py
+PRESENT trader/services/decision_validator.py
+MISSING trader/services/memory_manager.py
+PRESENT trader/adapters/llm.py
+PRESENT trader/adapters/source_connector.py
+PRESENT trader/adapters/broker/ccxt.py
+PRESENT trader/research.py
+PRESENT trader/web/server.py
+PRESENT trader/web/static/index.html

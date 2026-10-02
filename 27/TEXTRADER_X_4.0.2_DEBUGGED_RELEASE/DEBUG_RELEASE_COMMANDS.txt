@@ -1,0 +1,95 @@
+# TEXTRADER X 4.0.2 — Clean install + full debug validation
+
+cd ~/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE
+
+# 1) Clean previous environment
+rm -rf .venv
+python3 -m venv .venv
+source .venv/bin/activate
+
+# 2) Install the release
+python -m pip install --upgrade pip
+python -m pip install -e ".[dev,live]"
+
+# 3) Basic health
+textrader --version
+textrader doctor
+python -m pip check
+python -m compileall -q trader tests
+
+# 4) Unit/integration tests
+python -m pytest -q
+python -m pytest -q --cov=trader --cov-report=term-missing
+python -m pytest -q -W error
+
+# 5) CLI smoke tests
+python -m trader.cli --help
+python -m trader.cli analyze --help
+python -m trader.cli paper --help
+python -m trader.cli backtest --help
+python -m trader.cli market --help
+python -m trader.cli kill-switch --help
+
+# 6) Kill-switch acceptance
+python -m trader.cli kill-switch status
+python -m trader.cli kill-switch on --reason "FINAL_DEBUG_TEST"
+python -m trader.cli kill-switch status
+python -m trader.cli kill-switch off
+python -m trader.cli kill-switch status
+
+# 7) Mock decision/paper/backtest
+TEXTRADER_DECISION_ONLY=1 python -m trader.cli analyze BTC/USDT --source mock --mode paper --decision-only
+TEXTRADER_DECISION_ONLY=1 python -m trader.cli paper BTC/USDT --source mock --cycles 100 --decision-only
+python -m trader.cli backtest --bars 200
+
+# 8) Web/API validation
+python - <<'PY'
+from fastapi.testclient import TestClient
+from trader.web.server import app
+
+with TestClient(app, raise_server_exceptions=False) as c:
+    tests = [
+        ("GET", "/api/market?symbol="),
+        ("GET", "/api/market?symbol=INVALID"),
+        ("GET", "/api/market?symbol=../../etc/passwd"),
+        ("GET", "/api/runs?limit=-1"),
+        ("GET", "/api/runs?limit=999999999"),
+        ("POST", "/api/analyze"),
+        ("POST", "/api/paper"),
+    ]
+    for method, path in tests:
+        r = c.get(path) if method == "GET" else c.post(path, json={})
+        print(method, path, "->", r.status_code)
+        assert r.status_code < 500
+PY
+
+# 9) Real public Bitget validation
+timeout 30s python -m trader.cli market BTC/USDT --source bitget --interval 1m --limit 20
+
+timeout 60s env TEXTRADER_DECISION_ONLY=1   python -m trader.cli analyze BTC/USDT   --source bitget --mode paper --decision-only
+
+timeout 120s env TEXTRADER_DECISION_ONLY=1   python -m trader.cli paper BTC/USDT   --source bitget --cycles 20 --decision-only
+
+# 10) Database integrity
+python - <<'PY'
+import sqlite3
+from pathlib import Path
+db = Path("data/trader.db")
+assert db.exists()
+con = sqlite3.connect(db)
+assert con.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+assert con.execute("PRAGMA foreign_key_check").fetchall() == []
+print("DB_INTEGRITY_OK")
+PY
+
+# 11) Secret scan
+if grep -RInE   --exclude-dir=.venv   --exclude-dir=__pycache__   --exclude='*.pyc'   '(sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|BEGIN (RSA|OPENSSH|EC) PRIVATE KEY|api[_-]?secret[[:space:]]*=[[:space:]]*["'"'"'][^"'"'"']{8,})'   trader tests 2>/dev/null
+then
+  echo "POSSIBLE_SECRET_FOUND"
+  exit 1
+else
+  echo "NO_OBVIOUS_HARDCODED_SECRETS_FOUND"
+fi
+
+# 12) Authoritative full release gate
+bash FINAL_MASTER_TEST.sh

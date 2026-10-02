@@ -1,0 +1,1373 @@
+# XIR / TEXTRADER
+
+## FINAL BUILD, HARDENING, ADVERSARIAL VALIDATION & RELEASE PROMPT
+
+You are working on a serious software/AI trading-system project named:
+
+* Owner / Inventor: **Moeid Kafilonas / معید کفیل الناس**
+* Company / Brand: **XIR / اکسیر**
+* Project: **textrader**
+* Jurisdiction / target documentation context: **Iran**
+* Original concept date: **2026-09-22**
+* Inventor/contributor count: **one — Moeid Kafilonas**
+
+I am attaching the current implementation:
+
+**xir_trader_reference_runtime.zip**
+
+This ZIP is the current reference implementation.
+
+Your task is NOT to redesign the project from scratch.
+
+Your task is to take the existing implementation and produce the **final engineering-grade reference release** while preserving the original architecture and design intent.
+
+---
+
+# 1. NON-NEGOTIABLE PRINCIPLE
+
+Do not replace the original architecture with your own architecture.
+
+Preserve the core design:
+
+```text
+DATA READER
+    ↓
+CONTEXT MAKER
+    ↓
+AGENT 1 — INITIAL ANALYSIS / DECISION
+    ↓
+AGENT 2 — ADVERSARIAL FAILURE ANALYSIS
+    ↓
+AGENT 3 — FINAL DECISION SYNTHESIS
+    ↓
+RISK / PROTECTIVE LAYER
+    ↓
+EXECUTION GUARD
+    ↓
+EXECUTION TOOL / BROKER
+    ↓
+MEMORY + AUDIT
+```
+
+The system must support:
+
+```text
+BUY
+SELL
+WAIT
+RE-EVALUATE
+```
+
+`RE-EVALUATE` means restarting the complete decision pipeline from the Data Reader, not simply retrying the previous agent.
+
+Human STOP / REJECT has absolute authority.
+
+If the human issues STOP or rejects a decision:
+
+```text
+STOP
+→ no autonomous execution
+→ system waits for next explicit instruction
+```
+
+The execution layer must never bypass the protective layer.
+
+---
+
+# 2. FIRST TASK: FULL REPOSITORY AUDIT
+
+Before changing anything:
+
+1. Extract the ZIP.
+2. Inspect every file.
+3. Understand the current architecture.
+4. Understand all tests.
+5. Understand all runtime flows.
+6. Identify TODOs, placeholders, mocks, fake implementations, weak validation, unsafe defaults and architectural inconsistencies.
+7. Do not assume that a passing test means the system is correct.
+8. Trace every critical path manually.
+
+Produce an internal audit covering:
+
+* architecture
+* state machine
+* agents
+* schemas
+* decision flow
+* failure analysis
+* risk engine
+* execution guard
+* broker abstraction
+* memory
+* audit
+* persistence
+* configuration
+* security
+* testing
+* backtesting
+* paper trading
+* error handling
+* idempotency
+* concurrency
+* recovery
+* observability
+
+---
+
+# 3. CRITICAL ADVERSARIAL REQUIREMENT
+
+The most important objective is:
+
+## TRY TO BREAK THE SYSTEM.
+
+Do not only test the happy path.
+
+Create adversarial tests attempting to violate every important invariant.
+
+Especially test:
+
+### Agent 1
+
+Attempt:
+
+* malformed output
+* missing fields
+* invalid decision
+* contradictory reasoning
+* hallucinated data
+* unsupported assumptions
+* impossible confidence
+* stale market data
+* missing market data
+
+Invalid output must fail safely.
+
+---
+
+# 4. AGENT 2 MUST ACTUALLY BE ADVERSARIAL
+
+Agent 2 must not merely produce a decorative critique.
+
+It must actively attempt to invalidate Agent 1.
+
+Agent 2 should examine at minimum:
+
+```text
+- missing evidence
+- contradictory evidence
+- incorrect assumptions
+- unsupported assumptions
+- data quality
+- stale data
+- market regime mismatch
+- signal weakness
+- model uncertainty
+- prediction uncertainty
+- execution feasibility
+- risk violations
+- exposure
+- leverage
+- correlation
+- liquidity
+- transaction costs
+- slippage
+- timing
+- position constraints
+- previous memory/state
+```
+
+Its output must contain structured evidence.
+
+For example:
+
+```json
+{
+  "failure_found": true,
+  "blocking": true,
+  "severity": "high",
+  "category": "missing_data",
+  "evidence": [],
+  "counter_evidence": [],
+  "assumption": "",
+  "reason": "",
+  "confidence": 0.0
+}
+```
+
+Do not allow Agent 2 to simply say "the decision may be wrong."
+
+It must explain WHY.
+
+---
+
+# 5. IMPORTANT: BLOCKING FAILURE MUST BE ENFORCED
+
+This is a critical requirement.
+
+If Agent 2 produces a structurally valid:
+
+```json
+{
+  "blocking": true
+}
+```
+
+Agent 3 MUST NOT be allowed to blindly override it.
+
+Implement a deterministic policy layer.
+
+For example:
+
+```text
+Agent 2
+   ↓
+Failure Report
+   ↓
+Policy Evaluation
+   ├── blocking failure
+   │       ↓
+   │   RE-EVALUATE / WAIT / REJECT
+   │
+   └── non-blocking
+           ↓
+        Agent 3
+```
+
+Agent 3 may synthesize evidence, but it cannot violate hard system invariants.
+
+LLM output must NEVER override deterministic safety rules.
+
+---
+
+# 6. AGENT 3
+
+Agent 3 is responsible for final decision synthesis.
+
+It may:
+
+* accept Agent 1
+* override Agent 1
+* choose WAIT
+* request RE-EVALUATE
+
+But it must provide structured reasoning.
+
+Required conceptual output:
+
+```json
+{
+  "decision": "BUY|SELL|WAIT|RE-EVALUATE",
+  "reason": "",
+  "confidence": 0.0,
+  "supporting_evidence": [],
+  "blocking_issues": [],
+  "risk_summary": "",
+  "agent1_decision": "",
+  "agent2_findings": []
+}
+```
+
+The exact schema may follow the existing project's schema if one already exists.
+
+Do not create unnecessary incompatible schemas.
+
+---
+
+# 7. RE-EVALUATE MUST BE A REAL STATE TRANSITION
+
+Verify that:
+
+```text
+RE-EVALUATE
+```
+
+does not simply call Agent 1 again.
+
+It must restart:
+
+```text
+Data Reader
+→ Context Maker
+→ Agent 1
+→ Agent 2
+→ Agent 3
+→ Risk
+→ Guard
+```
+
+while preserving relevant memory/audit state.
+
+Prevent infinite re-evaluation loops.
+
+Implement a configurable maximum evaluation depth / cycle count.
+
+When the limit is reached:
+
+```text
+WAIT / HALT
+```
+
+rather than continuing forever.
+
+---
+
+# 8. RISK ENGINE
+
+The Risk Engine must be deterministic.
+
+It must not depend on an LLM for final enforcement.
+
+At minimum audit the existing implementation for:
+
+```text
+position size
+maximum position
+maximum exposure
+maximum leverage
+maximum daily loss
+maximum drawdown
+stop loss
+take profit
+correlation
+liquidity
+market/session restrictions
+emergency kill switch
+```
+
+Do not invent arbitrary production thresholds.
+
+Keep thresholds configurable.
+
+Every rejected trade must produce a machine-readable reason.
+
+Example:
+
+```json
+{
+  "allowed": false,
+  "failed_rules": [
+    {
+      "rule": "MAX_POSITION_SIZE",
+      "reason": "...",
+      "observed": 0,
+      "limit": 0
+    }
+  ]
+}
+```
+
+---
+
+# 9. EXECUTION GUARD
+
+The following must be hard invariants:
+
+### I1
+
+No order reaches Broker without passing:
+
+```text
+Risk Engine
++
+Execution Guard
+```
+
+### I2
+
+If system state is:
+
+```text
+HALTED
+```
+
+zero orders may reach the broker.
+
+### I3
+
+Human STOP / REJECT prevents execution.
+
+### I4
+
+Every decision and execution attempt is auditable.
+
+### I5
+
+Invalid agent output becomes:
+
+```text
+WAIT
+```
+
+or another explicitly safe state.
+
+### I6
+
+A blocking risk/failure condition cannot be bypassed by an LLM.
+
+### I7
+
+Duplicate retries cannot create duplicate orders.
+
+### I8
+
+Broker failures cannot silently become successful executions.
+
+### I9
+
+Unknown state must fail closed.
+
+### I10
+
+Missing critical market data must not result in autonomous BUY/SELL.
+
+---
+
+# 10. IDEMPOTENCY
+
+Verify and harden idempotency.
+
+A retry of:
+
+```text
+same decision
++
+same order intent
+```
+
+must not create duplicate execution.
+
+Test:
+
+```text
+normal execution
+network timeout
+retry
+duplicate retry
+concurrent retry
+process restart
+```
+
+---
+
+# 11. STATE MACHINE
+
+Audit the complete state machine.
+
+Every state must have:
+
+* valid transitions
+* invalid transitions
+* entry conditions
+* exit conditions
+* recovery behavior
+* persistence requirements
+
+Unknown or corrupted state must fail safely.
+
+Do not allow:
+
+```text
+HALTED → BUY
+```
+
+without an explicit authorized recovery flow.
+
+---
+
+# 12. MEMORY
+
+Preserve the project's memory architecture.
+
+Memory must NOT become an uncontrolled source of truth.
+
+Separate:
+
+```text
+current market facts
+historical memory
+decision history
+execution history
+risk state
+audit logs
+configuration
+```
+
+Prevent stale memory from being treated as current market data.
+
+Every memory item that materially affects a decision should be traceable.
+
+---
+
+# 13. AUDITABILITY
+
+Every decision cycle should have a traceable identifier.
+
+At minimum be able to reconstruct:
+
+```text
+cycle
+→ input data
+→ context
+→ Agent 1 output
+→ Agent 2 output
+→ policy checks
+→ Agent 3 output
+→ risk result
+→ guard result
+→ execution result
+→ final state
+```
+
+A reviewer should be able to answer:
+
+> Why did the system BUY?
+
+without asking the LLM again.
+
+---
+
+# 14. DATA INTEGRITY
+
+Do not allow fake, stale, missing or malformed data to silently enter the decision pipeline.
+
+Implement explicit status such as:
+
+```text
+VALID
+STALE
+MISSING
+INVALID
+PARTIAL
+```
+
+The exact implementation may follow the existing codebase.
+
+If critical input is invalid:
+
+```text
+WAIT
+```
+
+or:
+
+```text
+RE-EVALUATE
+```
+
+but never blindly BUY/SELL.
+
+---
+
+# 15. REAL MARKET DATA ARCHITECTURE
+
+Keep broker/data-provider integrations abstract.
+
+Create clean interfaces for:
+
+```text
+MarketDataProvider
+Broker
+ExecutionAdapter
+```
+
+Do not hard-code one exchange or market.
+
+The project is intended to support:
+
+```text
+stocks
+crypto
+forex
+commodities
+indices
+and other financial markets
+```
+
+but do not claim that all markets are already production-supported unless the implementation actually supports them.
+
+Use adapters.
+
+---
+
+# 16. LLM PROVIDERS
+
+The system must support API-based LLM providers through clean abstractions.
+
+Do NOT require a local LLM.
+
+The architecture should allow multiple LLM providers/models.
+
+Do not hard-code a single provider into the core decision engine.
+
+The deterministic safety layer must remain independent of the LLM provider.
+
+---
+
+# 17. TESTING
+
+Create a comprehensive test suite.
+
+At minimum include:
+
+## Unit tests
+
+For:
+
+* schemas
+* state transitions
+* risk rules
+* guard
+* memory
+* audit
+* idempotency
+* configuration
+
+## Integration tests
+
+For:
+
+```text
+Data → Context → Agent1 → Agent2 → Agent3 → Risk → Guard → Broker
+```
+
+## Failure tests
+
+Explicitly simulate:
+
+* malformed Agent1 output
+* malformed Agent2 output
+* malformed Agent3 output
+* blocking Agent2 failure
+* missing data
+* stale data
+* contradictory data
+* risk violation
+* guard violation
+* kill switch
+* STOP
+* broker failure
+* timeout
+* duplicate execution
+* restart
+* corrupted state
+* re-evaluation loop
+* concurrent requests
+
+## Property/invariant tests
+
+Prove that:
+
+```text
+Risk failure ⇒ no execution
+Guard failure ⇒ no execution
+HALTED ⇒ no execution
+STOP ⇒ no execution
+Invalid decision ⇒ safe state
+Blocking failure ⇒ cannot bypass deterministic policy
+```
+
+---
+
+# 18. BACKTESTING
+
+Do NOT confuse software correctness with trading profitability.
+
+Backtesting must distinguish:
+
+```text
+system execution correctness
+```
+
+from:
+
+```text
+strategy performance
+```
+
+Implement/verify support for:
+
+* historical data
+* fees
+* slippage
+* spread where applicable
+* execution assumptions
+* position sizing
+* drawdown
+* PnL
+* win rate
+* loss rate
+* expectancy
+* Sharpe-like metrics where appropriate
+* maximum drawdown
+* exposure
+* turnover
+
+Do not fabricate performance.
+
+If there is insufficient real historical data, clearly mark the result as unavailable or synthetic.
+
+---
+
+# 19. WALK-FORWARD / OUT-OF-SAMPLE VALIDATION
+
+If practical within the current architecture, add support for:
+
+```text
+train/development period
+→ validation period
+→ unseen test period
+```
+
+Do not leak future information into past decisions.
+
+Explicitly test for look-ahead bias.
+
+---
+
+# 20. SECURITY
+
+Audit:
+
+* secrets
+* environment variables
+* API keys
+* logging
+* sensitive data
+* broker credentials
+* prompt injection
+* malicious tool input
+* malformed external data
+* unsafe command execution
+* dependency risks
+
+Never put real credentials into the repository.
+
+Provide `.env.example`.
+
+---
+
+# 21. OBSERVABILITY
+
+Add clean structured logging.
+
+Every important event should include:
+
+```text
+timestamp
+cycle_id
+state
+component
+event
+severity
+decision
+result
+error
+```
+
+Avoid logging secrets.
+
+---
+
+# 22. CONFIGURATION
+
+Centralize configuration.
+
+No hidden magic constants.
+
+Use environment variables/config files where appropriate.
+
+Provide:
+
+```text
+.env.example
+config.example
+```
+
+with safe dummy values.
+
+---
+
+# 23. CLI / DEVELOPER EXPERIENCE
+
+The final project must be easy to run.
+
+Provide commands for:
+
+```text
+install
+test
+lint
+type-check if applicable
+demo
+paper trading
+backtest
+```
+
+Provide a clean README.
+
+A new developer should be able to clone/extract the project and understand how to run it without asking the author basic questions.
+
+---
+
+# 24. DOCUMENTATION
+
+Update the documentation to accurately describe the implementation.
+
+Include:
+
+```text
+README
+Architecture
+State Machine
+Agent Protocol
+Risk Specification
+Execution Model
+Memory Model
+Audit Model
+API/Provider interfaces
+Configuration
+Testing
+Backtesting
+Security
+Deployment
+Limitations
+Known limitations
+Roadmap
+```
+
+Do not document functionality that does not actually exist.
+
+Documentation must match code.
+
+---
+
+# 25. NO FAKE COMPLETION
+
+This is critical.
+
+Do not say:
+
+```text
+production ready
+```
+
+unless it genuinely is.
+
+Do not claim:
+
+```text
+profitable
+```
+
+unless demonstrated by appropriate historical/out-of-sample evidence.
+
+Do not claim:
+
+```text
+supports all financial markets
+```
+
+unless implemented.
+
+Do not claim:
+
+```text
+AI is accurate
+```
+
+without evidence.
+
+Clearly distinguish:
+
+```text
+implemented
+tested
+simulated
+mocked
+not implemented
+requires external integration
+```
+
+---
+
+# 26. PRESERVE ORIGINAL DESIGN SIGNATURE
+
+The project was intentionally designed around:
+
+```text
+data reader
+context creation
+initial decision
+adversarial failure discovery
+final synthesis
+risk/protection
+execution
+memory
+audit
+human override
+```
+
+This is the original design.
+
+Do not flatten it into a generic:
+
+```text
+LLM → trade
+```
+
+architecture.
+
+Do not replace the multi-agent adversarial structure with one model.
+
+Do not remove memory.
+
+Do not remove the protective layer.
+
+Do not remove RE-EVALUATE.
+
+Do not remove human STOP/REJECT.
+
+Do not remove BUY/SELL/WAIT execution abstraction.
+
+---
+
+# 27. FINAL ADVERSARIAL RED-TEAM PHASE
+
+After implementation is complete, perform a final red-team pass.
+
+Act as an attacker trying to force the system to execute an unsafe order.
+
+Try:
+
+```text
+Agent1 = BUY
+Agent2 = blocking failure
+Agent3 = BUY
+
+missing market data
+
+stale market data
+
+risk violation
+
+HALTED state
+
+human STOP
+
+malformed JSON
+
+provider timeout
+
+provider hallucination
+
+duplicate request
+
+concurrent request
+
+process restart
+
+corrupted memory
+
+corrupted state
+
+invalid broker response
+
+fake successful broker response
+
+re-evaluation loop
+
+contradictory market data
+
+extreme position size
+
+negative/NaN/infinite numerical values
+
+unexpected enum values
+
+unknown state
+```
+
+For every attack, prove whether execution was prevented.
+
+Fix every exploitable bypass you find.
+
+---
+
+# 28. RELEASE CRITERIA
+
+Do not finish until all of the following are true:
+
+```text
+[ ] repository audited
+[ ] architecture preserved
+[ ] state machine verified
+[ ] Agent 1 hardened
+[ ] Agent 2 genuinely adversarial
+[ ] blocking failures enforced
+[ ] Agent 3 constrained by deterministic policy
+[ ] RE-EVALUATE verified
+[ ] risk engine verified
+[ ] execution guard verified
+[ ] kill switch verified
+[ ] human STOP verified
+[ ] idempotency verified
+[ ] audit trail verified
+[ ] memory boundaries verified
+[ ] invalid data handling verified
+[ ] provider abstraction verified
+[ ] security audit completed
+[ ] unit tests pass
+[ ] integration tests pass
+[ ] adversarial tests pass
+[ ] backtest pipeline verified
+[ ] no false performance claims
+[ ] documentation updated
+[ ] README updated
+[ ] .env.example included
+[ ] demo works
+[ ] paper mode works
+[ ] final release tested from clean environment
+```
+
+---
+
+# 29. FINAL OUTPUT
+
+At the end, do NOT only give me an explanation.
+
+Produce the actual final project.
+
+The final output must contain:
+
+```text
+xir_trader_final/
+```
+
+with the complete source tree.
+
+Also create:
+
+```text
+xir_trader_final.zip
+```
+
+The ZIP must contain the complete project.
+
+---
+
+# 30. FINAL REPORT
+
+Create:
+
+```text
+FINAL_RELEASE_REPORT.md
+```
+
+containing:
+
+1. What was inspected
+2. What was changed
+3. What bugs were found
+4. What architectural weaknesses were found
+5. What adversarial attacks were performed
+6. Which attacks succeeded
+7. Which attacks were fixed
+8. Test results
+9. Backtest results
+10. Paper-trading results
+11. Remaining limitations
+12. What is mocked
+13. What requires real external APIs
+14. What is safe to run locally
+15. What must NOT be connected to real capital yet
+16. Exact commands to reproduce all tests
+
+---
+
+# 31. FINAL ANSWER FORMAT
+
+Your final response must be concise but complete.
+
+Give me:
+
+### A. Final status
+
+```text
+PASS / PASS WITH LIMITATIONS / FAIL
+```
+
+Do not use a vague status.
+
+### B. Architecture summary
+
+Explain the final pipeline.
+
+### C. Critical fixes
+
+List the important fixes.
+
+### D. Test results
+
+Give exact numbers.
+
+### E. Known limitations
+
+Be honest.
+
+### F. Exact run commands
+
+For a clean environment:
+
+```bash
+...
+```
+
+### G. Release artifact
+
+Provide the generated:
+
+```text
+xir_trader_final.zip
+```
+
+---
+
+# 32. MOST IMPORTANT RULE
+
+Do not optimize for making the report look impressive.
+
+Optimize for making the system:
+
+```text
+correct
+deterministic where it must be deterministic
+auditable
+testable
+fail-safe
+adversarially resistant
+modular
+extensible
+honest about limitations
+```
+
+The goal is NOT:
+
+> "make a bot that always trades."
+
+The goal is:
+
+> "build the strongest faithful implementation of the XIR / textrader architecture, where autonomous trading is possible only when every required condition has been satisfied."
+
+Start by inspecting the attached ZIP.
+
+Do not ask me a long sequence of questions.
+
+Make reasonable implementation decisions yourself when they do not alter the original architecture.
+
+If something cannot be safely implemented without external information or credentials, implement the correct abstraction/mock boundary, document it clearly, and continue.
+
+You are the lead software architect and senior Python engineer for this repository.
+
+IMPORTANT:
+Do NOT modify, create, delete, rename, or overwrite any file yet.
+This phase is READ-ONLY analysis.
+
+Repository root:
+~/Desktop/11/textrader
+
+The repository contains multiple generations/implementations of the TRADER_XIR system:
+
+- TRADER_XIR/
+- TRADER_XIR_runtime_v1/
+- xir_trader/
+- xir_trader_final/
+
+There is also a large documentation/specification corpus under TRADER_XIR/.
+
+Your first task is to understand the repository before implementing anything.
+
+Analyze the repository systematically.
+
+1. PROJECT DOCUMENTATION
+Read and understand the important documentation under:
+
+TRADER_XIR/00_MASTER/
+TRADER_XIR/02_PROJECT_IDENTITY/
+TRADER_XIR/03_ORIGINAL_ARCHITECTURE/
+TRADER_XIR/04_FORMAL_SYSTEM_SPECIFICATION/
+TRADER_XIR/05_AGENT_AND_MEMORY_MODEL/
+TRADER_XIR/06_DECISION_AND_FAILURE_MODEL/
+TRADER_XIR/07_RISK_ENGINE/
+TRADER_XIR/08_EXECUTION_MODEL/
+TRADER_XIR/09_SECURITY/
+TRADER_XIR/14_COMPLETE_PRD/
+TRADER_XIR/15_ENGINEERING_SPEC/
+TRADER_XIR/16_DATABASE_AND_API/
+TRADER_XIR/17_TEST_AND_VALIDATION/
+TRADER_XIR/18_AI_BUILD_SYSTEM/
+TRADER_XIR/19_TRACEABILITY/
+TRADER_XIR/20_SOURCE_OF_TRUTH/
+
+Pay particular attention to:
+- SOURCE_OF_TRUTH.md
+- MASTER_INDEX.md
+- COMPLETE_PRD.md
+- ENGINEERING_SPEC.md
+- DATABASE_AND_API.md
+- TEST_AND_VALIDATION.md
+- architecture_manifest.json
+- project_lock.md
+- TRACEABILITY_MATRIX.md
+- SUPER_PROMPT.md
+- IMPLEMENTATION_PROMPT.md
+- DEBUGGING_PROMPT.md
+- TESTING_PROMPT.md
+- RELEASE_PROMPT.md
+
+2. IMPLEMENTATION ANALYSIS
+
+Analyze all four implementation trees independently:
+
+A. TRADER_XIR_runtime_v1/
+B. xir_trader/
+C. xir_trader_final/
+
+For each implementation determine:
+
+- architecture
+- package structure
+- entry points
+- core state machine
+- agents
+- memory system
+- database/storage
+- risk engine
+- execution layer
+- broker abstraction
+- LLM abstraction
+- configuration
+- tests
+- CLI
+- backtesting/paper-trading capabilities
+- security controls
+- missing components
+- obvious bugs/inconsistencies
+- architectural deviations from the documented specification
+
+Do not assume that the newest-looking directory is automatically the correct implementation.
+
+3. VERSION / LINEAGE ANALYSIS
+
+Determine the likely evolution:
+
+TRADER_XIR specification
+        ↓
+implementation/version A
+        ↓
+implementation/version B
+        ↓
+implementation/version C
+
+Use actual evidence from files, version history, README files, traceability documents, timestamps where useful, and code structure.
+
+Identify which implementation appears to be:
+- original/reference
+- intermediate
+- current/final candidate
+- incomplete/experimental
+
+If this cannot be determined with confidence, explicitly say so.
+
+4. SOURCE OF TRUTH
+
+Determine exactly which documents are authoritative for:
+
+- architecture
+- requirements
+- security
+- risk
+- execution
+- database/API
+- testing
+- agent behavior
+- state machine
+
+Identify contradictions between documents if they exist.
+
+Do NOT silently resolve contradictions.
+
+5. TRACEABILITY
+
+Check whether the implementation(s) can be traced back to the documented requirements.
+
+Identify:
+- implemented requirements
+- partially implemented requirements
+- missing requirements
+- undocumented implementation behavior
+- dead/obsolete components
+
+6. TESTING
+
+Inspect the tests in each implementation.
+
+Determine:
+- what is currently tested
+- what is not tested
+- whether tests are likely to pass
+- test coverage gaps
+- dangerous false-confidence areas
+- whether tests correspond to the documented specification
+
+Do not run destructive tests or modify anything.
+
+You may run SAFE read-only commands such as:
+- pytest collection
+- static inspection
+- Python syntax checks
+- package metadata inspection
+
+But do not install packages, modify files, create files, delete files, or change configuration.
+
+7. ARCHITECTURAL COMPARISON
+
+Create a factual comparison of the implementations.
+
+For each major subsystem explain:
+
+Specification requirement
+→ implementation in each version
+→ differences
+→ missing pieces
+→ risks
+
+8. FINAL REPORT
+
+At the end produce a structured report with:
+
+A. Executive architecture summary
+B. Repository map
+C. Documentation/source-of-truth hierarchy
+D. Implementation lineage
+E. Implementation comparison
+F. Current architecture
+G. Major inconsistencies
+H. Missing requirements
+I. Test status
+J. Security/risk observations
+K. Recommended implementation target
+
+IMPORTANT:
+Do not recommend changes based merely on directory names.
+
+Base conclusions on actual repository evidence.
+
+Most importantly:
+
+DO NOT WRITE OR MODIFY CODE YET.
+
+I want the analysis and implementation plan first.
+
+Do not stop at analysis.
+
+**Build the final release.**

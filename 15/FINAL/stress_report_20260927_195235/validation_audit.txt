@@ -1,0 +1,5 @@
+valid REJECTED ValidationError
+bad_ohlc REJECTED ValidationError
+negative_volume REJECTED ValidationError
+negative_equity REJECTED ValidationError
+bad_completeness REJECTED ValidationError

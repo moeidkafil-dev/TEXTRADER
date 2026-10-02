@@ -1,0 +1,49 @@
+{
+  "query": "BTC market risk",
+  "searched": false,
+  "reason": "no_search_provider_configured",
+  "sources": [
+    {
+      "name": "Binance API Docs",
+      "url": "https://developers.binance.com/docs/binance-spot-api-docs",
+      "category": "exchange",
+      "reliability": "reference",
+      "fetched_at": "2026-09-27T17:46:05.078629+00:00"
+    },
+    {
+      "name": "CCXT Manual",
+      "url": "https://docs.ccxt.com/",
+      "category": "exchange-integration",
+      "reliability": "reference",
+      "fetched_at": "2026-09-27T17:46:05.078667+00:00"
+    },
+    {
+      "name": "SEC Investor Publications",
+      "url": "https://www.sec.gov/investor",
+      "category": "regulatory",
+      "reliability": "reference",
+      "fetched_at": "2026-09-27T17:46:05.078681+00:00"
+    },
+    {
+      "name": "CFTC",
+      "url": "https://www.cftc.gov/",
+      "category": "regulatory",
+      "reliability": "reference",
+      "fetched_at": "2026-09-27T17:46:05.078691+00:00"
+    },
+    {
+      "name": "Federal Reserve",
+      "url": "https://www.federalreserve.gov/",
+      "category": "macro",
+      "reliability": "reference",
+      "fetched_at": "2026-09-27T17:46:05.078700+00:00"
+    },
+    {
+      "name": "arXiv",
+      "url": "https://arxiv.org/",
+      "category": "research",
+      "reliability": "reference",
+      "fetched_at": "2026-09-27T17:46:05.078708+00:00"
+    }
+  ]
+}

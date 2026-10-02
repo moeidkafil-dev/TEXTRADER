@@ -1,0 +1,1498 @@
+┌──(moeid㉿kali)-[~/Desktop/19/TEXTRADER_X_4_0_2_FINAL]
+└─$ 
+source .venv/bin/activate 2>/dev/null || true
+
+python -m trader.cli --version
+
+python -m trader.cli --help
+textrader 4.0.2
+usage: textrader [-h] [--version] [--config CONFIG] [--risk RISK]
+                 {doctor,market,analyze,paper,backtest,research,llm,connector,kill-switch,ingest,web} ...
+
+TEXTRADER X autonomous trading runtime
+
+positional arguments:
+  {doctor,market,analyze,paper,backtest,research,llm,connector,kill-switch,ingest,web}
+    doctor              validate runtime/configuration
+    market              read real public market data
+    analyze             run one XIR decision cycle
+    paper               run paper cycles
+    backtest            run deterministic historical replay
+    research            run auditable knowledge research/search
+    llm                 manage/switch the LLM provider (mock, ollama, openai, anthropic, custom)
+    connector           manage external source connectors (API key or plain URL)
+    kill-switch         activate/resume the safety halt
+    ingest              analyze a normalized/manual market JSON snapshot
+    web                 start local web dashboard
+
+options:
+  -h, --help            show this help message and exit
+  --version             show program's version number and exit
+  --config CONFIG       trader.yaml path
+  --risk RISK           risk.yaml path
+                                                                                                                   
+┌──(.venv)─(moeid㉿kali)-[~/Desktop/19/TEXTRADER_X_4_0_2_FINAL]
+└─$ cd ~/Desktop/19/TEXTRADER_X_4_0_2_FINAL && source .venv/bin/activate && echo '=== VERSION ===' && python -m trader.cli --version && echo '=== DOCTOR ===' && python -m trader.cli doctor && echo '=== CONNECTORS ===' && python -m trader.cli connector list && echo '=== REAL-DATA CAPABILITY ===' && python -m trader.cli --help && echo '=== PAPER TEST ===' && python -m trader.cli paper BTC/USDT --source mock --cycles 20 --interval 0
+=== VERSION ===
+textrader 4.0.2
+=== DOCTOR ===
+{
+  "python": "3.13.12",
+  "config": "ok",
+  "mode": "paper",
+  "market_data": "mock",
+  "db": "data/trader.db"
+}
+=== CONNECTORS ===
+{}
+=== REAL-DATA CAPABILITY ===
+usage: textrader [-h] [--version] [--config CONFIG] [--risk RISK]
+                 {doctor,market,analyze,paper,backtest,research,llm,connector,kill-switch,ingest,web} ...
+
+TEXTRADER X autonomous trading runtime
+
+positional arguments:
+  {doctor,market,analyze,paper,backtest,research,llm,connector,kill-switch,ingest,web}
+    doctor              validate runtime/configuration
+    market              read real public market data
+    analyze             run one XIR decision cycle
+    paper               run paper cycles
+    backtest            run deterministic historical replay
+    research            run auditable knowledge research/search
+    llm                 manage/switch the LLM provider (mock, ollama, openai, anthropic, custom)
+    connector           manage external source connectors (API key or plain URL)
+    kill-switch         activate/resume the safety halt
+    ingest              analyze a normalized/manual market JSON snapshot
+    web                 start local web dashboard
+
+options:
+  -h, --help            show this help message and exit
+  --version             show program's version number and exit
+  --config CONFIG       trader.yaml path
+  --risk RISK           risk.yaml path
+=== PAPER TEST ===
+[1/20] cycle=cyc_5f66c693f742 state=IDLE decision=BUY errors=0
+[2/20] cycle=cyc_b225319f279d state=IDLE decision=WAIT errors=0
+[3/20] cycle=cyc_f24af647e2cf state=IDLE decision=BUY errors=0
+[4/20] cycle=cyc_4cedfb2dcea6 state=IDLE decision=WAIT errors=0
+[5/20] cycle=cyc_8e8492d3e8eb state=IDLE decision=BUY errors=0
+[6/20] cycle=cyc_c09e594c1670 state=IDLE decision=WAIT errors=0
+[7/20] cycle=cyc_430cd6155d46 state=IDLE decision=BUY errors=0
+[8/20] cycle=cyc_d99350d36ea3 state=IDLE decision=WAIT errors=0
+[9/20] cycle=cyc_ebdf00a6f002 state=IDLE decision=BUY errors=0
+[10/20] cycle=cyc_4697e974d2d4 state=IDLE decision=BUY errors=0
+[11/20] cycle=cyc_a4481d3797d2 state=IDLE decision=BUY errors=0
+[12/20] cycle=cyc_84bf8e3f4658 state=IDLE decision=WAIT errors=0
+[13/20] cycle=cyc_0e671c08118d state=IDLE decision=BUY errors=0
+[14/20] cycle=cyc_3a2040807090 state=IDLE decision=BUY errors=0
+[15/20] cycle=cyc_0cfbb3851ec1 state=IDLE decision=BUY errors=0
+[16/20] cycle=cyc_39664c860241 state=IDLE decision=BUY errors=0
+[17/20] cycle=cyc_fdf7589789b1 state=IDLE decision=BUY errors=0
+[18/20] cycle=cyc_311e11878d15 state=IDLE decision=WAIT errors=0
+[19/20] cycle=cyc_3491e64b0c50 state=IDLE decision=BUY errors=0
+[20/20] cycle=cyc_0a2087c125e2 state=IDLE decision=BUY errors=0
+                                                                                                                   
+┌──(.venv)─(moeid㉿kali)-[~/Desktop/19/TEXTRADER_X_4_0_2_FINAL]
+└─$ >....                                                                                                          
+                print("OPEN :", last[1])
+                print("HIGH :", last[2])
+                print("LOW  :", last[3])
+                print("CLOSE:", last[4])
+                print("VOLUME:", last[5])
+
+        elif name == "kraken":
+            error = data.get("error")
+
+            print("API_ERROR:", error)
+
+            result = data.get("result", {})
+
+            pairs = [
+                k for k in result.keys()
+                if k != "last"
+            ]
+
+            print("PAIRS:", pairs)
+
+            if pairs:
+                rows = result[pairs[0]]
+
+                print("REAL_DATA:", bool(rows))
+                print("CANDLES:", len(rows))
+
+                if rows:
+                    last = rows[-1]
+
+                    print("LAST_RAW_CANDLE:", last)
+
+    except Exception as exc:
+        print("REAL_DATA: FAILED")
+        print("ERROR:", repr(exc))
+
+print()
+print("REAL DATA PROBE FINISHED")
+PY
+true && \
+
+echo && \
+echo "[18/18] FINAL STATE + ARTIFACTS" && \
+python -m trader.cli doctor || true && \
+echo && \
+echo "DATABASE:" && \
+ls -lh data/trader.db 2>/dev/null || true && \
+echo && \
+echo "VALIDATION LOG:" && \
+echo "$LOG" && \
+echo && \
+echo "====================================================================" && \
+echo " FINAL VALIDATION FINISHED" && \
+echo "====================================================================" && \
+echo && \
+echo "IMPORTANT:" && \
+echo "This test NEVER sends a real exchange order." && \
+echo "Real public market APIs are READ-ONLY." && \
+echo "Paper/backtest execution is simulation only." && \
+echo && \
+echo "Send me the COMPLETE output of this command."
+
+====================================================================
+ TEXTRADER X 4.0.2 — FINAL HARD VALIDATION
+ REAL PUBLIC DATA / PAPER ONLY / NO REAL ORDERS
+====================================================================
+
+[01/18] VERSION
+textrader 4.0.2
+
+[02/18] PYTHON / PLATFORM
+Python 3.13.12
+Linux kali 6.16.8+kali-amd64 #1 SMP PREEMPT_DYNAMIC Kali 6.16.8-1kali1 (2025-09-24) x86_64 GNU/Linux
+
+[03/18] DEPENDENCY INTEGRITY
+No broken requirements found.
+
+[04/18] COMPILE CHECK
+COMPILE: PASS
+
+[05/18] DOCTOR
+{
+  "python": "3.13.12",
+  "config": "ok",
+  "mode": "paper",
+  "market_data": "mock",
+  "db": "data/trader.db"
+}
+
+[06/18] CONNECTORS
+{}
+
+[07/18] MARKET COMMAND — EXACT INTERFACE
+usage: textrader market [-h] [--interval INTERVAL] [--limit LIMIT] symbol
+
+positional arguments:
+  symbol
+
+options:
+  -h, --help           show this help message and exit
+  --interval INTERVAL
+  --limit LIMIT
+
+[08/18] ANALYZE COMMAND — EXACT INTERFACE
+usage: textrader analyze [-h] [--source {mock,binance}]
+                         [--mode {paper,backtest,live}]
+                         [symbol]
+
+positional arguments:
+  symbol
+
+options:
+  -h, --help            show this help message and exit
+  --source {mock,binance}
+  --mode {paper,backtest,live}
+
+[09/18] PAPER COMMAND — EXACT INTERFACE
+usage: textrader paper [-h] [--cycles CYCLES] [--interval INTERVAL]
+                       [--source {mock,binance}]
+                       [symbol]
+
+positional arguments:
+  symbol
+
+options:
+  -h, --help            show this help message and exit
+  --cycles CYCLES
+  --interval INTERVAL
+  --source {mock,binance}
+
+[10/18] BACKTEST COMMAND — EXACT INTERFACE
+usage: textrader backtest [-h] [--bars BARS]
+
+options:
+  -h, --help   show this help message and exit
+  --bars BARS
+
+[11/18] INGEST COMMAND — EXACT INTERFACE
+usage: textrader ingest [-h] input
+
+positional arguments:
+  input       JSON file containing open/high/low/close and portfolio fields
+
+options:
+  -h, --help  show this help message and exit
+
+[12/18] LLM STATUS
+{
+  "active": "mock",
+  "available": [
+    "anthropic",
+    "mock",
+    "ollama",
+    "openai"
+  ]
+}
+{
+  "provider": "mock",
+  "ok": true,
+  "sample": "{\"digest\": \"9b05a6289408d112\", \"system_tag\": \"Reply with exactly one word.\", \"us"
+}
+
+[13/18] UNIT / INTEGRATION TESTS
+........................................................................ [ 78%]
+....................                                                     [100%]
+=============================== warnings summary ===============================
+.venv/lib/python3.13/site-packages/fastapi/testclient.py:1
+  /home/moeid/Desktop/19/TEXTRADER_X_4_0_2_FINAL/.venv/lib/python3.13/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+
+[14/18] COVERAGE
+........................................................................ [ 78%]
+....................                                                     [100%]
+=============================== warnings summary ===============================
+.venv/lib/python3.13/site-packages/fastapi/testclient.py:1
+  /home/moeid/Desktop/19/TEXTRADER_X_4_0_2_FINAL/.venv/lib/python3.13/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.13.12-final-0 _______________
+
+Name                                    Stmts   Miss  Cover   Missing
+---------------------------------------------------------------------
+trader/__init__.py                          5      0   100%
+trader/adapters/__init__.py                 0      0   100%
+trader/adapters/broker/__init__.py         10      4    60%   11-14
+trader/adapters/broker/base.py             26      0   100%
+trader/adapters/broker/ccxt.py             39     39     0%   6-55
+trader/adapters/broker/mock.py             36      6    83%   29, 33, 42, 57, 61-62
+trader/adapters/llm.py                    105     55    48%   61-70, 87-88, 93-105, 122-124, 129-143, 157-159, 164-178, 204, 208, 214-218, 241-245, 249-263
+trader/adapters/source_connector.py       121    121     0%   26-192
+trader/cli.py                             227    124    45%   17, 21, 25-36, 40-52, 56-67, 71-75, 79-88, 93-101, 105-107, 111-114, 118-127, 131-136, 140-148, 152-156, 160-163, 167-170, 174-180, 184-194, 283-285, 289-291, 295
+trader/core/__init__.py                     0      0   100%
+trader/core/config.py                     104     17    84%   51, 94, 98, 110, 112, 121, 137-144, 150, 157-158
+trader/core/invariants.py                  28     28     0%   15-69
+trader/core/schemas.py                    215      7    97%   142, 200, 332-334, 363, 365
+trader/core/state_machine.py               61      2    97%   107, 124
+trader/core/util.py                        33      5    85%   22, 35, 39, 48-49
+trader/engine/__init__.py                   2      0   100%
+trader/engine/orchestrator.py             382     57    85%   281, 283, 343, 372-376, 395-399, 445-452, 460-468, 551-555, 559-567, 579-589, 593, 619-624, 630, 649-650
+trader/knowledge.py                        23     23     0%   6-43
+trader/market/__init__.py                   2      0   100%
+trader/market/binance.py                   55     19    65%   22-29, 36, 39, 42, 67-106
+trader/memory/__init__.py                   4      0   100%
+trader/memory/db_manager.py                40      1    98%   62
+trader/memory/manager.py                  103     10    90%   101, 146-152, 161-163
+trader/memory/stores.py                    69      1    99%   137
+trader/research.py                         21     21     0%   6-38
+trader/scripts/__init__.py                  0      0   100%
+trader/scripts/run_backtest.py             57     57     0%   2-81
+trader/scripts/run_demo.py                 17     17     0%   2-24
+trader/scripts/run_paper.py                38     38     0%   2-63
+trader/scripts/run_research.py              7      7     0%   1-8
+trader/services/__init__.py                 0      0   100%
+trader/services/agent1.py                  57      8    86%   52-56, 75-77, 101-102
+trader/services/agent2.py                  88     16    82%   59, 65-74, 88-90, 100, 112, 138, 156, 160, 172, 191, 203
+trader/services/agent3.py                  66     15    77%   51, 56-59, 76-78, 83, 100-102, 116-119
+trader/services/agent_base.py              62      3    95%   57, 81-82
+trader/services/context_service.py         47      6    87%   44, 56-58, 69-70
+trader/services/data_reader.py             80      5    94%   26, 139-144
+trader/services/decision_engine.py         46      3    93%   25, 35, 57
+trader/services/decision_validator.py      34      9    74%   30, 32, 34, 36, 38, 46, 51-53
+trader/services/execution_guard.py         22      0   100%
+trader/services/final_tools.py             36      5    86%   28, 65-69
+trader/services/kill_switch.py             56      8    86%   39-40, 45, 55-56, 62, 74-75
+trader/services/message_service.py         79     17    78%   33-36, 44-52, 92, 95, 124-127, 140-141
+trader/services/metrics.py                 23     23     0%   2-33
+trader/services/observability.py           52     13    75%   35, 38-39, 54-57, 64-66, 69-72
+trader/services/position_sizer.py          24      2    92%   26, 29
+trader/services/risk_engine.py             66      9    86%   55-68
+trader/services/super_agent.py             42      5    88%   24-28
+trader/storage/__init__.py                  3      0   100%
+trader/storage/connection.py               74     19    74%   56-64, 71, 80-83, 124, 145-148
+trader/storage/repo.py                    111     24    78%   26, 28, 38-39, 115-116, 129-130, 185-190, 203-214
+trader/storage/schema.py                    8      1    88%   161
+trader/web/__init__.py                      0      0   100%
+trader/web/server.py                      280     79    72%   96-98, 108, 111, 115, 117, 119, 121, 126, 130, 133, 142, 149, 159, 254, 264-270, 274-284, 293, 297-300, 304-306, 310-312, 316, 321-322, 326-336, 340-341, 346-348, 352-354, 358-362, 366-368, 375, 402-405
+---------------------------------------------------------------------
+TOTAL                                    3186    929    71%
+92 passed, 1 warning in 3.09s
+
+[15/18] PAPER STRESS — 100 CYCLES
+[1/100] cycle=cyc_b6ed32194dba state=IDLE decision=BUY errors=0
+[2/100] cycle=cyc_3aa7e531ba28 state=IDLE decision=WAIT errors=0
+[3/100] cycle=cyc_c5b9cf9f2b52 state=IDLE decision=BUY errors=0
+[4/100] cycle=cyc_b1c836756d6c state=IDLE decision=WAIT errors=0
+[5/100] cycle=cyc_4506cb523524 state=IDLE decision=BUY errors=0
+[6/100] cycle=cyc_a9d71d976d78 state=IDLE decision=WAIT errors=0
+[7/100] cycle=cyc_28777b4d328c state=IDLE decision=BUY errors=0
+[8/100] cycle=cyc_4e5a8724095e state=IDLE decision=WAIT errors=0
+[9/100] cycle=cyc_a4ae122a6b41 state=IDLE decision=BUY errors=0
+[10/100] cycle=cyc_5638b200fb79 state=IDLE decision=BUY errors=0
+[11/100] cycle=cyc_b10ed7c56828 state=IDLE decision=BUY errors=0
+[12/100] cycle=cyc_a1803c817485 state=IDLE decision=WAIT errors=0
+[13/100] cycle=cyc_a002da8feaf2 state=IDLE decision=BUY errors=0
+[14/100] cycle=cyc_7ae69ae36bf5 state=IDLE decision=BUY errors=0
+[15/100] cycle=cyc_7d6ea58148ae state=IDLE decision=BUY errors=0
+[16/100] cycle=cyc_58d5acb66a07 state=IDLE decision=BUY errors=0
+[17/100] cycle=cyc_b0afcf183120 state=IDLE decision=BUY errors=0
+[18/100] cycle=cyc_3339a60807ca state=IDLE decision=WAIT errors=0
+[19/100] cycle=cyc_4d7c031df4d0 state=IDLE decision=BUY errors=0
+[20/100] cycle=cyc_5a630a9803b9 state=IDLE decision=BUY errors=0
+[21/100] cycle=cyc_65d235692509 state=IDLE decision=BUY errors=0
+[22/100] cycle=cyc_e4c8966f3bc3 state=IDLE decision=WAIT errors=0
+[23/100] cycle=cyc_6a9cdaa212f4 state=IDLE decision=WAIT errors=0
+[24/100] cycle=cyc_f00109b9b3b7 state=IDLE decision=WAIT errors=0
+[25/100] cycle=cyc_c1773f40c236 state=IDLE decision=WAIT errors=0
+[26/100] cycle=cyc_30e803c15d88 state=IDLE decision=WAIT errors=0
+[27/100] cycle=cyc_b9b7c399c3f9 state=IDLE decision=WAIT errors=0
+[28/100] cycle=cyc_89c744c58bd6 state=IDLE decision=BUY errors=0
+[29/100] cycle=cyc_e2650ab7e423 state=IDLE decision=WAIT errors=0
+[30/100] cycle=cyc_c9a76f3f72e0 state=IDLE decision=BUY errors=0
+[31/100] cycle=cyc_83efade9304c state=IDLE decision=BUY errors=0
+[32/100] cycle=cyc_c6168a736845 state=IDLE decision=BUY errors=0
+[33/100] cycle=cyc_fdd39887df04 state=IDLE decision=BUY errors=0
+[34/100] cycle=cyc_cd9009e082dd state=IDLE decision=WAIT errors=0
+[35/100] cycle=cyc_dd04c202f6fd state=IDLE decision=BUY errors=0
+[36/100] cycle=cyc_60d6d13ea751 state=IDLE decision=BUY errors=0
+[37/100] cycle=cyc_b792b932c4fa state=IDLE decision=BUY errors=0
+[38/100] cycle=cyc_ef729f53c351 state=IDLE decision=WAIT errors=0
+[39/100] cycle=cyc_8d420715d5ef state=IDLE decision=BUY errors=0
+[40/100] cycle=cyc_86cd51b23e14 state=IDLE decision=WAIT errors=0
+[41/100] cycle=cyc_19fe01018b33 state=IDLE decision=WAIT errors=0
+[42/100] cycle=cyc_0ae0be7ab21c state=IDLE decision=BUY errors=0
+[43/100] cycle=cyc_a67a9acf95da state=IDLE decision=BUY errors=0
+[44/100] cycle=cyc_3d88fd223868 state=IDLE decision=WAIT errors=0
+[45/100] cycle=cyc_d7f055b93abc state=IDLE decision=WAIT errors=0
+[46/100] cycle=cyc_c5d20b6e32fd state=IDLE decision=WAIT errors=0
+[47/100] cycle=cyc_44e4d5f5374d state=IDLE decision=BUY errors=0
+[48/100] cycle=cyc_37e8f8460028 state=IDLE decision=WAIT errors=0
+[49/100] cycle=cyc_6f8f31d46906 state=IDLE decision=BUY errors=0
+[50/100] cycle=cyc_41be96fbdde3 state=IDLE decision=WAIT errors=0
+[51/100] cycle=cyc_14779a31d1b8 state=IDLE decision=WAIT errors=0
+[52/100] cycle=cyc_5bbcee9a9201 state=IDLE decision=WAIT errors=0
+[53/100] cycle=cyc_be796d0f9d31 state=IDLE decision=BUY errors=0
+[54/100] cycle=cyc_729cb59c3a1f state=IDLE decision=BUY errors=0
+[55/100] cycle=cyc_f6db80f24fa4 state=IDLE decision=WAIT errors=0
+[56/100] cycle=cyc_2252ae1e2889 state=IDLE decision=WAIT errors=0
+[57/100] cycle=cyc_df8480709210 state=IDLE decision=WAIT errors=0
+[58/100] cycle=cyc_3d869d1dd661 state=IDLE decision=WAIT errors=0
+[59/100] cycle=cyc_afa6fb4373d1 state=IDLE decision=BUY errors=0
+[60/100] cycle=cyc_21ebff1110b3 state=IDLE decision=BUY errors=0
+[61/100] cycle=cyc_481f58daafb8 state=IDLE decision=WAIT errors=0
+[62/100] cycle=cyc_96c3b9766a7c state=IDLE decision=WAIT errors=0
+[63/100] cycle=cyc_1c89d84d6576 state=IDLE decision=WAIT errors=0
+[64/100] cycle=cyc_e8b391bc7f31 state=IDLE decision=WAIT errors=0
+[65/100] cycle=cyc_0cc1f0b1511d state=IDLE decision=WAIT errors=0
+[66/100] cycle=cyc_f30172ab22c2 state=IDLE decision=BUY errors=0
+[67/100] cycle=cyc_e32fbb274451 state=IDLE decision=BUY errors=0
+[68/100] cycle=cyc_6174fbe970ff state=IDLE decision=BUY errors=0
+[69/100] cycle=cyc_72c7c0f7062e state=IDLE decision=BUY errors=0
+[70/100] cycle=cyc_d6f2d7bee3ed state=IDLE decision=BUY errors=0
+[71/100] cycle=cyc_933ee317f1d2 state=IDLE decision=WAIT errors=0
+[72/100] cycle=cyc_5f00a627f66d state=IDLE decision=BUY errors=0
+[73/100] cycle=cyc_a77af5c4f086 state=IDLE decision=BUY errors=0
+[74/100] cycle=cyc_2ea77f262131 state=IDLE decision=BUY errors=0
+[75/100] cycle=cyc_1e32c251f767 state=IDLE decision=WAIT errors=0
+[76/100] cycle=cyc_54808bcf7bcc state=IDLE decision=WAIT errors=0
+[77/100] cycle=cyc_ae4ab84b27d2 state=IDLE decision=BUY errors=0
+[78/100] cycle=cyc_83ab1c936a89 state=IDLE decision=BUY errors=0
+[79/100] cycle=cyc_0d78dcb6a377 state=IDLE decision=BUY errors=0
+[80/100] cycle=cyc_a561b507f2ae state=IDLE decision=BUY errors=0
+[81/100] cycle=cyc_e8ef0eaaa508 state=IDLE decision=BUY errors=0
+[82/100] cycle=cyc_ec72cb93c90f state=IDLE decision=BUY errors=0
+[83/100] cycle=cyc_74650810c16b state=IDLE decision=BUY errors=0
+[84/100] cycle=cyc_d8f8b0a2ffad state=IDLE decision=BUY errors=0
+[85/100] cycle=cyc_a321ad568e46 state=IDLE decision=BUY errors=0
+[86/100] cycle=cyc_c8755183fc42 state=IDLE decision=WAIT errors=0
+[87/100] cycle=cyc_3d690503d97c state=IDLE decision=BUY errors=0
+[88/100] cycle=cyc_3564a523f80c state=IDLE decision=BUY errors=0
+[89/100] cycle=cyc_98057f10834f state=IDLE decision=BUY errors=0
+[90/100] cycle=cyc_707806a4102c state=IDLE decision=BUY errors=0
+[91/100] cycle=cyc_18053ca70526 state=IDLE decision=BUY errors=0
+[92/100] cycle=cyc_38a3a722fc98 state=IDLE decision=BUY errors=0
+[93/100] cycle=cyc_90bd4a6104b9 state=IDLE decision=BUY errors=0
+[94/100] cycle=cyc_f3c5afc0b21f state=IDLE decision=BUY errors=0
+[95/100] cycle=cyc_1038a0fcc1cf state=IDLE decision=WAIT errors=0
+[96/100] cycle=cyc_e129438050e1 state=IDLE decision=WAIT errors=0
+[97/100] cycle=cyc_f2beae6a5e77 state=IDLE decision=BUY errors=0
+[98/100] cycle=cyc_690e7605ca3c state=IDLE decision=WAIT errors=0
+[99/100] cycle=cyc_cdcc79fc1745 state=IDLE decision=WAIT errors=0
+[100/100] cycle=cyc_ac80dfaad85c state=IDLE decision=BUY errors=0
+
+[16/18] DETERMINISTIC BACKTEST — 1000 BARS
+[bar   0] cyc_d5fcf6451f5c final=BUY          exec=filled     state=IDLE
+[bar   1] cyc_b239ccd48111 final=SELL         exec=filled     state=IDLE
+[bar   2] cyc_be3f2baaaa71 final=SELL         exec=filled     state=IDLE
+[bar   3] cyc_5b500a616b0a final=SELL         exec=filled     state=IDLE
+[bar   4] cyc_3c78a3289ba6 final=BUY          exec=filled     state=IDLE
+[bar   5] cyc_44d57b0326b7 final=BUY          exec=filled     state=IDLE
+[bar   6] cyc_029a427bab2b final=SELL         exec=filled     state=IDLE
+[bar   7] cyc_1bd8cd076a80 final=BUY          exec=filled     state=IDLE
+[bar   8] cyc_af0688db36f4 final=SELL         exec=filled     state=IDLE
+[bar   9] cyc_e1d0b8f2666e final=SELL         exec=filled     state=IDLE
+[bar  10] cyc_3d383ec0576b final=BUY          exec=filled     state=IDLE
+[bar  11] cyc_ec6c80e4b6f1 final=WAIT         exec=-          state=IDLE
+[bar  12] cyc_f66a6a43a77b final=BUY          exec=filled     state=IDLE
+[bar  13] cyc_174ecb7f747c final=SELL         exec=filled     state=IDLE
+[bar  14] cyc_3e02e8a0a116 final=BUY          exec=filled     state=IDLE
+[bar  15] cyc_5068ae2166c6 final=BUY          exec=filled     state=IDLE
+[bar  16] cyc_3e236bb27f7f final=BUY          exec=filled     state=IDLE
+[bar  17] cyc_6e8c31bd88ef final=SELL         exec=filled     state=IDLE
+[bar  18] cyc_5cf7ed38d6cf final=BUY          exec=filled     state=IDLE
+[bar  19] cyc_1fb3786b71f2 final=SELL         exec=filled     state=IDLE
+[bar  20] cyc_3b8b70a620d2 final=SELL         exec=filled     state=IDLE
+[bar  21] cyc_e528134e966f final=SELL         exec=filled     state=IDLE
+[bar  22] cyc_474ac5364431 final=BUY          exec=filled     state=IDLE
+[bar  23] cyc_48506b44b827 final=SELL         exec=filled     state=IDLE
+[bar  24] cyc_ff69dd198cb5 final=BUY          exec=filled     state=IDLE
+[bar  25] cyc_dfb3214241a9 final=SELL         exec=filled     state=IDLE
+[bar  26] cyc_237e518d10b8 final=SELL         exec=filled     state=IDLE
+[bar  27] cyc_1f74774188d8 final=BUY          exec=filled     state=IDLE
+[bar  28] cyc_aa8d46ef3f8e final=BUY          exec=filled     state=IDLE
+[bar  29] cyc_2ef5b32b916a final=BUY          exec=filled     state=IDLE
+[bar  30] cyc_cbafc420e8f5 final=SELL         exec=filled     state=IDLE
+[bar  31] cyc_32cbf8deb9c5 final=SELL         exec=filled     state=IDLE
+[bar  32] cyc_d95f08132e96 final=SELL         exec=filled     state=IDLE
+[bar  33] cyc_c759a0a87d75 final=SELL         exec=filled     state=IDLE
+[bar  34] cyc_38024c64697d final=SELL         exec=filled     state=IDLE
+[bar  35] cyc_571e69adb8fe final=BUY          exec=filled     state=IDLE
+[bar  36] cyc_dfae49654dba final=SELL         exec=filled     state=IDLE
+[bar  37] cyc_07e8745006e9 final=BUY          exec=filled     state=IDLE
+[bar  38] cyc_3e728468c6f9 final=WAIT         exec=-          state=IDLE
+[bar  39] cyc_8e2c64dc1fe0 final=WAIT         exec=-          state=IDLE
+[bar  40] cyc_cc68a9b9d651 final=SELL         exec=filled     state=IDLE
+[bar  41] cyc_758b9d1fdd98 final=WAIT         exec=-          state=IDLE
+[bar  42] cyc_819c84efad04 final=BUY          exec=filled     state=IDLE
+[bar  43] cyc_97e4fe6fc452 final=BUY          exec=filled     state=IDLE
+[bar  44] cyc_77ec7cd875c9 final=SELL         exec=filled     state=IDLE
+[bar  45] cyc_36ba031735e5 final=SELL         exec=filled     state=IDLE
+[bar  46] cyc_20bd68dc9918 final=BUY          exec=filled     state=IDLE
+[bar  47] cyc_1f4dbeb736a2 final=SELL         exec=filled     state=IDLE
+[bar  48] cyc_3a19a04bc1e1 final=BUY          exec=filled     state=IDLE
+[bar  49] cyc_f6dd99532124 final=BUY          exec=filled     state=IDLE
+[bar  50] cyc_f31a1c5d0136 final=BUY          exec=filled     state=IDLE
+[bar  51] cyc_9fc3a2d95c87 final=SELL         exec=filled     state=IDLE
+[bar  52] cyc_048111e4a351 final=BUY          exec=filled     state=IDLE
+[bar  53] cyc_a2f9ca92498f final=BUY          exec=filled     state=IDLE
+[bar  54] cyc_fbcdfb67aab7 final=BUY          exec=filled     state=IDLE
+[bar  55] cyc_d36c00cb920d final=BUY          exec=filled     state=IDLE
+[bar  56] cyc_d22f88bc32bb final=SELL         exec=filled     state=IDLE
+[bar  57] cyc_003d4389ae9a final=WAIT         exec=-          state=IDLE
+[bar  58] cyc_8ff50c3536f2 final=BUY          exec=filled     state=IDLE
+[bar  59] cyc_5825d58f08b7 final=SELL         exec=filled     state=IDLE
+[bar  60] cyc_488530c316bc final=SELL         exec=filled     state=IDLE
+[bar  61] cyc_5e7e600cfd2c final=BUY          exec=filled     state=IDLE
+[bar  62] cyc_e4516d895e68 final=WAIT         exec=-          state=IDLE
+[bar  63] cyc_2dfbf9897386 final=SELL         exec=filled     state=IDLE
+[bar  64] cyc_d512b48ad270 final=SELL         exec=filled     state=IDLE
+[bar  65] cyc_8055c69b73ae final=SELL         exec=filled     state=IDLE
+[bar  66] cyc_8520c56bec89 final=SELL         exec=filled     state=IDLE
+[bar  67] cyc_ba55704b438b final=BUY          exec=filled     state=IDLE
+[bar  68] cyc_32aee2d8da83 final=BUY          exec=filled     state=IDLE
+[bar  69] cyc_39e7a52e902f final=WAIT         exec=-          state=IDLE
+[bar  70] cyc_1357f924c164 final=WAIT         exec=-          state=IDLE
+[bar  71] cyc_b3265b39cfec final=BUY          exec=filled     state=IDLE
+[bar  72] cyc_1975fd486d7d final=BUY          exec=filled     state=IDLE
+[bar  73] cyc_d1e0c6b34d10 final=SELL         exec=filled     state=IDLE
+[bar  74] cyc_5cb23248f7c6 final=BUY          exec=filled     state=IDLE
+[bar  75] cyc_66ebf5c9b5b6 final=BUY          exec=filled     state=IDLE
+[bar  76] cyc_1803fd9e8415 final=SELL         exec=filled     state=IDLE
+[bar  77] cyc_bcbaa1f3b909 final=BUY          exec=filled     state=IDLE
+[bar  78] cyc_7a0ebb8a8e44 final=WAIT         exec=-          state=IDLE
+[bar  79] cyc_2fec129f9180 final=BUY          exec=filled     state=IDLE
+[bar  80] cyc_4a6ad1729b35 final=SELL         exec=filled     state=IDLE
+[bar  81] cyc_3617e56b221a final=SELL         exec=filled     state=IDLE
+[bar  82] cyc_934066ec7e3e final=SELL         exec=filled     state=IDLE
+[bar  83] cyc_b7f600f0a12a final=SELL         exec=filled     state=IDLE
+[bar  84] cyc_d8f5148731b1 final=BUY          exec=filled     state=IDLE
+[bar  85] cyc_fea003fbeafc final=BUY          exec=filled     state=IDLE
+[bar  86] cyc_688ab93292e9 final=BUY          exec=filled     state=IDLE
+[bar  87] cyc_143d7e80b408 final=BUY          exec=filled     state=IDLE
+[bar  88] cyc_fccbbcafa461 final=SELL         exec=filled     state=IDLE
+[bar  89] cyc_0f3fe481ebd7 final=BUY          exec=filled     state=IDLE
+[bar  90] cyc_834c20166cb6 final=WAIT         exec=-          state=IDLE
+[bar  91] cyc_4eea526a62cb final=SELL         exec=filled     state=IDLE
+[bar  92] cyc_8b7a00f155b7 final=BUY          exec=filled     state=IDLE
+[bar  93] cyc_aac68d79d044 final=SELL         exec=filled     state=IDLE
+[bar  94] cyc_659cddb1c037 final=BUY          exec=filled     state=IDLE
+[bar  95] cyc_16f549b7612c final=BUY          exec=filled     state=IDLE
+[bar  96] cyc_b21720d089e6 final=WAIT         exec=-          state=IDLE
+[bar  97] cyc_6eaa1402f12a final=BUY          exec=filled     state=IDLE
+[bar  98] cyc_0332b68a345c final=BUY          exec=filled     state=IDLE
+[bar  99] cyc_bb240bdcc334 final=SELL         exec=filled     state=IDLE
+[bar 100] cyc_cfe211ce5313 final=SELL         exec=filled     state=IDLE
+[bar 101] cyc_f7ceab96228f final=BUY          exec=filled     state=IDLE
+[bar 102] cyc_d5d126e4b66d final=SELL         exec=filled     state=IDLE
+[bar 103] cyc_d2237a911f07 final=SELL         exec=filled     state=IDLE
+[bar 104] cyc_cda89b2f478d final=SELL         exec=filled     state=IDLE
+[bar 105] cyc_db4cae8baf42 final=SELL         exec=filled     state=IDLE
+[bar 106] cyc_9737d9d0e977 final=SELL         exec=filled     state=IDLE
+[bar 107] cyc_7078309a7768 final=SELL         exec=filled     state=IDLE
+[bar 108] cyc_b6875830e3ca final=SELL         exec=filled     state=IDLE
+[bar 109] cyc_dc925c4a2b9f final=BUY          exec=filled     state=IDLE
+[bar 110] cyc_1e37484719e0 final=SELL         exec=filled     state=IDLE
+[bar 111] cyc_e03c9fe3c513 final=BUY          exec=filled     state=IDLE
+[bar 112] cyc_0552c5037b0e final=BUY          exec=filled     state=IDLE
+[bar 113] cyc_23ac183785d1 final=SELL         exec=filled     state=IDLE
+[bar 114] cyc_f681a34cd186 final=BUY          exec=filled     state=IDLE
+[bar 115] cyc_82b1547a9101 final=BUY          exec=filled     state=IDLE
+[bar 116] cyc_6da96f3dfa1c final=SELL         exec=filled     state=IDLE
+[bar 117] cyc_ede18e8d663b final=BUY          exec=filled     state=IDLE
+[bar 118] cyc_b156e0d2b025 final=WAIT         exec=-          state=IDLE
+[bar 119] cyc_0fe63a9bd403 final=WAIT         exec=-          state=IDLE
+[bar 120] cyc_122600fe65fb final=BUY          exec=filled     state=IDLE
+[bar 121] cyc_34dcc5d39d41 final=BUY          exec=filled     state=IDLE
+[bar 122] cyc_e7b57822b3fb final=WAIT         exec=-          state=IDLE
+[bar 123] cyc_902314f536a5 final=BUY          exec=filled     state=IDLE
+[bar 124] cyc_f93dded6943d final=SELL         exec=filled     state=IDLE
+[bar 125] cyc_3a1645d6c331 final=BUY          exec=filled     state=IDLE
+[bar 126] cyc_7a420ea073c5 final=BUY          exec=filled     state=IDLE
+[bar 127] cyc_256139d44b87 final=WAIT         exec=-          state=IDLE
+[bar 128] cyc_0e4d14b1a5fa final=BUY          exec=filled     state=IDLE
+[bar 129] cyc_19bb4b1223fc final=SELL         exec=filled     state=IDLE
+[bar 130] cyc_6471c7dc99a2 final=SELL         exec=filled     state=IDLE
+[bar 131] cyc_88459d064536 final=SELL         exec=filled     state=IDLE
+[bar 132] cyc_5f822a812997 final=BUY          exec=filled     state=IDLE
+[bar 133] cyc_d2d6a3bc7190 final=BUY          exec=filled     state=IDLE
+[bar 134] cyc_182d8ade2c19 final=WAIT         exec=-          state=IDLE
+[bar 135] cyc_050fe7d6bd09 final=SELL         exec=filled     state=IDLE
+[bar 136] cyc_3d9cd99764b3 final=SELL         exec=filled     state=IDLE
+[bar 137] cyc_159d4831f4e2 final=BUY          exec=filled     state=IDLE
+[bar 138] cyc_89d5c4355cd7 final=BUY          exec=filled     state=IDLE
+[bar 139] cyc_bee26e1b99d6 final=BUY          exec=filled     state=IDLE
+[bar 140] cyc_791a7852c241 final=SELL         exec=filled     state=IDLE
+[bar 141] cyc_c01a9b4dd7f9 final=SELL         exec=filled     state=IDLE
+[bar 142] cyc_b9e18cd60915 final=WAIT         exec=-          state=IDLE
+[bar 143] cyc_0d81d8d194c1 final=BUY          exec=filled     state=IDLE
+[bar 144] cyc_4bd563766fa5 final=BUY          exec=filled     state=IDLE
+[bar 145] cyc_63f523980385 final=BUY          exec=filled     state=IDLE
+[bar 146] cyc_d289c0037796 final=SELL         exec=-          state=IDLE
+[bar 147] cyc_c7913925cf63 final=WAIT         exec=-          state=IDLE
+[bar 148] cyc_216d32ea7af6 final=BUY          exec=-          state=IDLE
+[bar 149] cyc_5465f8fd87be final=BUY          exec=-          state=IDLE
+[bar 150] cyc_1e35c85addb2 final=SELL         exec=-          state=IDLE
+[bar 151] cyc_a17437543323 final=BUY          exec=-          state=IDLE
+[bar 152] cyc_85b43f844ce6 final=SELL         exec=-          state=IDLE
+[bar 153] cyc_7186ad515977 final=SELL         exec=-          state=IDLE
+[bar 154] cyc_15fd5891a8d3 final=BUY          exec=-          state=IDLE
+[bar 155] cyc_a64ba3e47c22 final=SELL         exec=-          state=IDLE
+[bar 156] cyc_f981c3780070 final=BUY          exec=-          state=IDLE
+[bar 157] cyc_dcd77476dc25 final=BUY          exec=-          state=IDLE
+[bar 158] cyc_1d51f609e55f final=SELL         exec=-          state=IDLE
+[bar 159] cyc_7dff0347b19f final=BUY          exec=-          state=IDLE
+[bar 160] cyc_c5c5a84a3556 final=BUY          exec=-          state=IDLE
+[bar 161] cyc_2fa16c4f3311 final=SELL         exec=-          state=IDLE
+[bar 162] cyc_46bbdd379ac3 final=BUY          exec=-          state=IDLE
+[bar 163] cyc_5d7a8d6bea2c final=WAIT         exec=-          state=IDLE
+[bar 164] cyc_9163b9c63718 final=BUY          exec=-          state=IDLE
+[bar 165] cyc_44cdd713478c final=SELL         exec=-          state=IDLE
+[bar 166] cyc_cccf6e793f75 final=BUY          exec=-          state=IDLE
+[bar 167] cyc_cacef2f411ac final=BUY          exec=-          state=IDLE
+[bar 168] cyc_ec10bcbc11da final=WAIT         exec=-          state=IDLE
+[bar 169] cyc_4bb229026094 final=BUY          exec=-          state=IDLE
+[bar 170] cyc_b744e6f9a97c final=BUY          exec=-          state=IDLE
+[bar 171] cyc_9907cc712343 final=SELL         exec=-          state=IDLE
+[bar 172] cyc_0ee74f18f711 final=SELL         exec=-          state=IDLE
+[bar 173] cyc_a5115d64a7a3 final=SELL         exec=-          state=IDLE
+[bar 174] cyc_11bf28b8ed5e final=SELL         exec=-          state=IDLE
+[bar 175] cyc_ece23b88f402 final=BUY          exec=-          state=IDLE
+[bar 176] cyc_d448e09eb9ca final=WAIT         exec=-          state=IDLE
+[bar 177] cyc_4a9a1ac3d22c final=BUY          exec=-          state=IDLE
+[bar 178] cyc_9ef3d5b718be final=SELL         exec=-          state=IDLE
+[bar 179] cyc_8b3cae934cd2 final=SELL         exec=-          state=IDLE
+[bar 180] cyc_2c643e35498a final=SELL         exec=-          state=IDLE
+[bar 181] cyc_f1d7471efc56 final=SELL         exec=-          state=IDLE
+[bar 182] cyc_27be96bbbbd0 final=BUY          exec=-          state=IDLE
+[bar 183] cyc_4135489f9bb7 final=BUY          exec=-          state=IDLE
+[bar 184] cyc_78ea32acda2e final=BUY          exec=-          state=IDLE
+[bar 185] cyc_755932583924 final=SELL         exec=-          state=IDLE
+[bar 186] cyc_f248f3c4ee12 final=SELL         exec=-          state=IDLE
+[bar 187] cyc_6a81ca09903d final=BUY          exec=-          state=IDLE
+[bar 188] cyc_6c1d9ea0b35b final=BUY          exec=-          state=IDLE
+[bar 189] cyc_349abb62fb0b final=SELL         exec=-          state=IDLE
+[bar 190] cyc_30aab30351bf final=BUY          exec=-          state=IDLE
+[bar 191] cyc_829a97b6b165 final=BUY          exec=-          state=IDLE
+[bar 192] cyc_bafc57045f3c final=BUY          exec=-          state=IDLE
+[bar 193] cyc_dd4ffd161aa9 final=SELL         exec=-          state=IDLE
+[bar 194] cyc_90a70e6251fe final=SELL         exec=-          state=IDLE
+[bar 195] cyc_8d08abe395e1 final=SELL         exec=-          state=IDLE
+[bar 196] cyc_1b3841f6b66b final=BUY          exec=-          state=IDLE
+[bar 197] cyc_22c121b9f41a final=BUY          exec=-          state=IDLE
+[bar 198] cyc_258b1316d5e7 final=SELL         exec=-          state=IDLE
+[bar 199] cyc_1041b4c19824 final=BUY          exec=-          state=IDLE
+[bar 200] cyc_895d0a05d846 final=BUY          exec=-          state=IDLE
+[bar 201] cyc_7cb344c2687d final=BUY          exec=filled     state=IDLE
+[bar 202] cyc_21d8cf18f9c8 final=SELL         exec=-          state=IDLE
+[bar 203] cyc_d9ded5dcf129 final=SELL         exec=-          state=IDLE
+[bar 204] cyc_fb56bb7be02e final=SELL         exec=-          state=IDLE
+[bar 205] cyc_6d0ee64c8332 final=BUY          exec=-          state=IDLE
+[bar 206] cyc_5e4267f2673f final=BUY          exec=-          state=IDLE
+[bar 207] cyc_0c87cf59c570 final=BUY          exec=-          state=IDLE
+[bar 208] cyc_b29e4200c7d9 final=BUY          exec=-          state=IDLE
+[bar 209] cyc_fc51cd55d02f final=SELL         exec=-          state=IDLE
+[bar 210] cyc_e075344b0fc8 final=BUY          exec=-          state=IDLE
+[bar 211] cyc_8cfc57c18ecd final=WAIT         exec=-          state=IDLE
+[bar 212] cyc_62b27b652e71 final=BUY          exec=-          state=IDLE
+[bar 213] cyc_d0e4adee0d1d final=BUY          exec=-          state=IDLE
+[bar 214] cyc_b0a22f19b1f4 final=SELL         exec=-          state=IDLE
+[bar 215] cyc_2f7109aac75d final=BUY          exec=-          state=IDLE
+[bar 216] cyc_2550dac5c235 final=SELL         exec=-          state=IDLE
+[bar 217] cyc_e3a28d135def final=BUY          exec=-          state=IDLE
+[bar 218] cyc_8dc6ea0801cc final=SELL         exec=-          state=IDLE
+[bar 219] cyc_e882147305da final=BUY          exec=-          state=IDLE
+[bar 220] cyc_4f50013973aa final=BUY          exec=-          state=IDLE
+[bar 221] cyc_b1c4ae4824f0 final=BUY          exec=-          state=IDLE
+[bar 222] cyc_15dd0bad8763 final=SELL         exec=-          state=IDLE
+[bar 223] cyc_15f127113d8b final=SELL         exec=-          state=IDLE
+[bar 224] cyc_681a60a69c57 final=SELL         exec=-          state=IDLE
+[bar 225] cyc_8f93bb64e712 final=SELL         exec=-          state=IDLE
+[bar 226] cyc_bff95350283c final=SELL         exec=-          state=IDLE
+[bar 227] cyc_51c20e052b4c final=SELL         exec=-          state=IDLE
+[bar 228] cyc_7db21f013bca final=SELL         exec=-          state=IDLE
+[bar 229] cyc_abb0e906892d final=SELL         exec=-          state=IDLE
+[bar 230] cyc_d0b6f53e4b16 final=SELL         exec=-          state=IDLE
+[bar 231] cyc_128e9bc962a1 final=SELL         exec=-          state=IDLE
+[bar 232] cyc_45ac631676cd final=SELL         exec=-          state=IDLE
+[bar 233] cyc_6d3d809d8999 final=SELL         exec=-          state=IDLE
+[bar 234] cyc_90439ce253d9 final=WAIT         exec=-          state=IDLE
+[bar 235] cyc_850784057269 final=BUY          exec=-          state=IDLE
+[bar 236] cyc_1877e258f9fe final=BUY          exec=-          state=IDLE
+[bar 237] cyc_b42ceedcbb19 final=BUY          exec=-          state=IDLE
+[bar 238] cyc_8b687d6d1b00 final=WAIT         exec=-          state=IDLE
+[bar 239] cyc_961348b3b541 final=BUY          exec=-          state=IDLE
+[bar 240] cyc_666fb97750fd final=BUY          exec=-          state=IDLE
+[bar 241] cyc_0bdaf01f9d99 final=BUY          exec=-          state=IDLE
+[bar 242] cyc_49b0d9cbe178 final=SELL         exec=-          state=IDLE
+[bar 243] cyc_2a2f051e9af1 final=SELL         exec=-          state=IDLE
+[bar 244] cyc_a5b34c90c396 final=WAIT         exec=-          state=IDLE
+[bar 245] cyc_34da20dd0dff final=SELL         exec=-          state=IDLE
+[bar 246] cyc_e1f67788ccb0 final=SELL         exec=-          state=IDLE
+[bar 247] cyc_58a6f679fcf0 final=WAIT         exec=-          state=IDLE
+[bar 248] cyc_cd280b1688de final=BUY          exec=-          state=IDLE
+[bar 249] cyc_2a1d4da1c85c final=WAIT         exec=-          state=IDLE
+[bar 250] cyc_bf199b0a7b8c final=BUY          exec=-          state=IDLE
+[bar 251] cyc_8a7f57e2b839 final=SELL         exec=-          state=IDLE
+[bar 252] cyc_d42141cd21a2 final=BUY          exec=-          state=IDLE
+[bar 253] cyc_b03c6c3f8b16 final=SELL         exec=-          state=IDLE
+[bar 254] cyc_5690faa81cf7 final=BUY          exec=-          state=IDLE
+[bar 255] cyc_e3ebc4f9e689 final=WAIT         exec=-          state=IDLE
+[bar 256] cyc_b98ffc65bc2d final=WAIT         exec=-          state=IDLE
+[bar 257] cyc_fcfc48cab52d final=SELL         exec=-          state=IDLE
+[bar 258] cyc_dba2592b63f8 final=SELL         exec=-          state=IDLE
+[bar 259] cyc_72965a94daf1 final=BUY          exec=-          state=IDLE
+[bar 260] cyc_f03dfb206c0c final=BUY          exec=-          state=IDLE
+[bar 261] cyc_c9e49668cf16 final=BUY          exec=-          state=IDLE
+[bar 262] cyc_1935e3ea3547 final=BUY          exec=-          state=IDLE
+[bar 263] cyc_b4551fdef64e final=SELL         exec=-          state=IDLE
+[bar 264] cyc_ab3ff5cd62ce final=BUY          exec=-          state=IDLE
+[bar 265] cyc_84c16e2db0cc final=BUY          exec=-          state=IDLE
+[bar 266] cyc_c71dd6349af5 final=SELL         exec=-          state=IDLE
+[bar 267] cyc_285fa3104186 final=WAIT         exec=-          state=IDLE
+[bar 268] cyc_e93d137bd405 final=BUY          exec=-          state=IDLE
+[bar 269] cyc_f043667e1b78 final=SELL         exec=-          state=IDLE
+[bar 270] cyc_fd8e4845993a final=BUY          exec=-          state=IDLE
+[bar 271] cyc_f5feb49aec8f final=SELL         exec=-          state=IDLE
+[bar 272] cyc_f014052a7469 final=SELL         exec=-          state=IDLE
+[bar 273] cyc_e3b1393ef674 final=SELL         exec=-          state=IDLE
+[bar 274] cyc_110f4a45cf95 final=BUY          exec=-          state=IDLE
+[bar 275] cyc_400109cfc138 final=BUY          exec=-          state=IDLE
+[bar 276] cyc_e52720a0aa74 final=SELL         exec=-          state=IDLE
+[bar 277] cyc_1ef3f914eb82 final=SELL         exec=-          state=IDLE
+[bar 278] cyc_3c35cd35f5a4 final=BUY          exec=-          state=IDLE
+[bar 279] cyc_cdccf63d7db0 final=WAIT         exec=-          state=IDLE
+[bar 280] cyc_ef4cc501bfa5 final=SELL         exec=-          state=IDLE
+[bar 281] cyc_b00df4fc9c8a final=BUY          exec=-          state=IDLE
+[bar 282] cyc_3250f9748f55 final=BUY          exec=-          state=IDLE
+[bar 283] cyc_7a4101e1c5ce final=SELL         exec=-          state=IDLE
+[bar 284] cyc_b075658c6ebb final=SELL         exec=-          state=IDLE
+[bar 285] cyc_58e28b2cd6ff final=BUY          exec=-          state=IDLE
+[bar 286] cyc_d6d2890fc7a9 final=BUY          exec=-          state=IDLE
+[bar 287] cyc_8c1caa3534b9 final=BUY          exec=-          state=IDLE
+[bar 288] cyc_52c343a42fdd final=SELL         exec=-          state=IDLE
+[bar 289] cyc_e843ab793e64 final=BUY          exec=-          state=IDLE
+[bar 290] cyc_3c1cbdb61e0f final=SELL         exec=-          state=IDLE
+[bar 291] cyc_ca9692616339 final=BUY          exec=-          state=IDLE
+[bar 292] cyc_11ba30c1007f final=BUY          exec=-          state=IDLE
+[bar 293] cyc_23193afafa44 final=BUY          exec=-          state=IDLE
+[bar 294] cyc_072f4fcdfa18 final=SELL         exec=-          state=IDLE
+[bar 295] cyc_395dbbe9c005 final=SELL         exec=-          state=IDLE
+[bar 296] cyc_fb9455b23689 final=SELL         exec=-          state=IDLE
+[bar 297] cyc_08d928e5bd71 final=BUY          exec=-          state=IDLE
+[bar 298] cyc_d3d084ed3bef final=SELL         exec=-          state=IDLE
+[bar 299] cyc_62baab9e8076 final=SELL         exec=-          state=IDLE
+[bar 300] cyc_49cb6e8a6a66 final=SELL         exec=-          state=IDLE
+[bar 301] cyc_05c232efa6a8 final=BUY          exec=-          state=IDLE
+[bar 302] cyc_f66d2f25957c final=BUY          exec=-          state=IDLE
+[bar 303] cyc_702b8f782cc6 final=BUY          exec=-          state=IDLE
+[bar 304] cyc_cc01ec7be975 final=SELL         exec=-          state=IDLE
+[bar 305] cyc_d325de3584dc final=SELL         exec=-          state=IDLE
+[bar 306] cyc_87caef45908b final=BUY          exec=-          state=IDLE
+[bar 307] cyc_55163506b49b final=SELL         exec=-          state=IDLE
+[bar 308] cyc_e2a3163ee1e0 final=BUY          exec=-          state=IDLE
+[bar 309] cyc_71b807fa35bd final=BUY          exec=-          state=IDLE
+[bar 310] cyc_e855e2becef8 final=BUY          exec=-          state=IDLE
+[bar 311] cyc_6a0d88ffbab2 final=WAIT         exec=-          state=IDLE
+[bar 312] cyc_f8a6c7060ae7 final=SELL         exec=-          state=IDLE
+[bar 313] cyc_5e941dc751cd final=SELL         exec=-          state=IDLE
+[bar 314] cyc_ba4d0233f43d final=SELL         exec=-          state=IDLE
+[bar 315] cyc_d3eb7af15d6d final=BUY          exec=-          state=IDLE
+[bar 316] cyc_b01d86c92018 final=SELL         exec=-          state=IDLE
+[bar 317] cyc_40da693d071b final=BUY          exec=-          state=IDLE
+[bar 318] cyc_d1a7b8270de4 final=BUY          exec=-          state=IDLE
+[bar 319] cyc_52fd97ad55dd final=SELL         exec=-          state=IDLE
+[bar 320] cyc_34840e4828ad final=BUY          exec=-          state=IDLE
+[bar 321] cyc_6f64ac8fd2df final=SELL         exec=-          state=IDLE
+[bar 322] cyc_d44f2443ed0e final=SELL         exec=-          state=IDLE
+[bar 323] cyc_19dcfe1b31fd final=SELL         exec=-          state=IDLE
+[bar 324] cyc_f27793e7d472 final=SELL         exec=-          state=IDLE
+[bar 325] cyc_c10455abd7ba final=SELL         exec=-          state=IDLE
+[bar 326] cyc_4297ca321eb6 final=WAIT         exec=-          state=IDLE
+[bar 327] cyc_c420c4e70489 final=BUY          exec=-          state=IDLE
+[bar 328] cyc_b2b276076ce1 final=SELL         exec=-          state=IDLE
+[bar 329] cyc_178ed42a1daa final=BUY          exec=-          state=IDLE
+[bar 330] cyc_c5422280d05f final=SELL         exec=-          state=IDLE
+[bar 331] cyc_5567e4ee319d final=SELL         exec=-          state=IDLE
+[bar 332] cyc_0ca15f118598 final=BUY          exec=-          state=IDLE
+[bar 333] cyc_07ee2b0ee38f final=SELL         exec=-          state=IDLE
+[bar 334] cyc_36d182708267 final=BUY          exec=-          state=IDLE
+[bar 335] cyc_6fee30b28e86 final=BUY          exec=-          state=IDLE
+[bar 336] cyc_b154f5059669 final=BUY          exec=-          state=IDLE
+[bar 337] cyc_4564d7daf24c final=SELL         exec=-          state=IDLE
+[bar 338] cyc_bafa533c40a1 final=BUY          exec=-          state=IDLE
+[bar 339] cyc_1bc22eaaf6c3 final=SELL         exec=-          state=IDLE
+[bar 340] cyc_175a680fcab9 final=BUY          exec=-          state=IDLE
+[bar 341] cyc_525de7f4e630 final=BUY          exec=-          state=IDLE
+[bar 342] cyc_9c5b0ea3b29a final=SELL         exec=-          state=IDLE
+[bar 343] cyc_8041ca23aad5 final=BUY          exec=-          state=IDLE
+[bar 344] cyc_ef957f000fe6 final=BUY          exec=-          state=IDLE
+[bar 345] cyc_230d6d3b2026 final=BUY          exec=-          state=IDLE
+[bar 346] cyc_81fb2e8a980a final=SELL         exec=-          state=IDLE
+[bar 347] cyc_3f2787860a70 final=SELL         exec=-          state=IDLE
+[bar 348] cyc_c3636e180171 final=SELL         exec=-          state=IDLE
+[bar 349] cyc_0e070e3eb715 final=SELL         exec=-          state=IDLE
+[bar 350] cyc_15271e96e5d9 final=SELL         exec=-          state=IDLE
+[bar 351] cyc_a11dc9981f57 final=SELL         exec=-          state=IDLE
+[bar 352] cyc_aad0562ebe8e final=SELL         exec=-          state=IDLE
+[bar 353] cyc_0b25c4b91bc8 final=WAIT         exec=-          state=IDLE
+[bar 354] cyc_3c09bfc76f74 final=SELL         exec=-          state=IDLE
+[bar 355] cyc_be8d3b960674 final=WAIT         exec=-          state=IDLE
+[bar 356] cyc_1c9f383348e3 final=BUY          exec=-          state=IDLE
+[bar 357] cyc_1524ff63321e final=SELL         exec=-          state=IDLE
+[bar 358] cyc_a11024d72509 final=SELL         exec=-          state=IDLE
+[bar 359] cyc_763d04a52a03 final=SELL         exec=-          state=IDLE
+[bar 360] cyc_637d351fbf9d final=BUY          exec=-          state=IDLE
+[bar 361] cyc_da0f2ac51074 final=SELL         exec=-          state=IDLE
+[bar 362] cyc_315dbdf1c6de final=SELL         exec=-          state=IDLE
+[bar 363] cyc_f37b236711a3 final=SELL         exec=-          state=IDLE
+[bar 364] cyc_3a296372f223 final=SELL         exec=-          state=IDLE
+[bar 365] cyc_e9eb8e5c82fb final=SELL         exec=-          state=IDLE
+[bar 366] cyc_5c05723780bc final=SELL         exec=-          state=IDLE
+[bar 367] cyc_19de362a16ff final=BUY          exec=-          state=IDLE
+[bar 368] cyc_d3fc61d619d2 final=SELL         exec=-          state=IDLE
+[bar 369] cyc_0015df2eccca final=SELL         exec=-          state=IDLE
+[bar 370] cyc_45c8ef783191 final=SELL         exec=-          state=IDLE
+[bar 371] cyc_46af130fbe91 final=WAIT         exec=-          state=IDLE
+[bar 372] cyc_d38219b84aa2 final=BUY          exec=-          state=IDLE
+[bar 373] cyc_b0c223ceda0a final=WAIT         exec=-          state=IDLE
+[bar 374] cyc_cad2e1b5aa75 final=SELL         exec=-          state=IDLE
+[bar 375] cyc_712beabce19b final=BUY          exec=-          state=IDLE
+[bar 376] cyc_c2e94a15e2ed final=BUY          exec=-          state=IDLE
+[bar 377] cyc_436f1421fa18 final=WAIT         exec=-          state=IDLE
+[bar 378] cyc_165239fc2df9 final=BUY          exec=-          state=IDLE
+[bar 379] cyc_9c4242772a1a final=SELL         exec=-          state=IDLE
+[bar 380] cyc_a9c11f8bc66f final=SELL         exec=-          state=IDLE
+[bar 381] cyc_e880bdc65c93 final=BUY          exec=-          state=IDLE
+[bar 382] cyc_340fe29958e0 final=WAIT         exec=-          state=IDLE
+[bar 383] cyc_408ed3ceee17 final=BUY          exec=-          state=IDLE
+[bar 384] cyc_500724135af2 final=SELL         exec=-          state=IDLE
+[bar 385] cyc_05f0f4021c2a final=SELL         exec=-          state=IDLE
+[bar 386] cyc_11ba6036afd6 final=SELL         exec=-          state=IDLE
+[bar 387] cyc_afcc3ff3a5ef final=BUY          exec=-          state=IDLE
+[bar 388] cyc_dff7a186068c final=BUY          exec=-          state=IDLE
+[bar 389] cyc_7c0eb31b6a55 final=BUY          exec=-          state=IDLE
+[bar 390] cyc_64d66effc0e9 final=BUY          exec=-          state=IDLE
+[bar 391] cyc_b17589fce275 final=SELL         exec=-          state=IDLE
+[bar 392] cyc_fe05b8a03184 final=BUY          exec=-          state=IDLE
+[bar 393] cyc_59af2d64b448 final=BUY          exec=-          state=IDLE
+[bar 394] cyc_69774657f06a final=SELL         exec=-          state=IDLE
+[bar 395] cyc_afddeac632b2 final=SELL         exec=-          state=IDLE
+[bar 396] cyc_6d3cc4a6b284 final=BUY          exec=-          state=IDLE
+[bar 397] cyc_38a8b915185c final=SELL         exec=-          state=IDLE
+[bar 398] cyc_ff29f28cb51d final=BUY          exec=-          state=IDLE
+[bar 399] cyc_6dc4fdfb4d53 final=BUY          exec=-          state=IDLE
+[bar 400] cyc_7b07670f1887 final=SELL         exec=-          state=IDLE
+[bar 401] cyc_09c6a47c8177 final=SELL         exec=-          state=IDLE
+[bar 402] cyc_49a119c63710 final=BUY          exec=-          state=IDLE
+[bar 403] cyc_9d78da43330e final=SELL         exec=-          state=IDLE
+[bar 404] cyc_9b99e0d337a9 final=BUY          exec=-          state=IDLE
+[bar 405] cyc_70cd59e4c6d5 final=SELL         exec=-          state=IDLE
+[bar 406] cyc_76f6ca1351ad final=BUY          exec=-          state=IDLE
+[bar 407] cyc_e81d90a49ce9 final=BUY          exec=-          state=IDLE
+[bar 408] cyc_38ecbb72162f final=SELL         exec=-          state=IDLE
+[bar 409] cyc_1bfdc41ddf38 final=SELL         exec=-          state=IDLE
+[bar 410] cyc_b419f203cfb4 final=SELL         exec=-          state=IDLE
+[bar 411] cyc_036191a8a43e final=BUY          exec=-          state=IDLE
+[bar 412] cyc_396e28309b0e final=BUY          exec=-          state=IDLE
+[bar 413] cyc_abe5bfe3dcbd final=SELL         exec=-          state=IDLE
+[bar 414] cyc_df0ecffe8ac3 final=SELL         exec=-          state=IDLE
+[bar 415] cyc_01524313b61f final=BUY          exec=-          state=IDLE
+[bar 416] cyc_0b794d59854d final=SELL         exec=-          state=IDLE
+[bar 417] cyc_5943e3c811b6 final=BUY          exec=-          state=IDLE
+[bar 418] cyc_334588b534ef final=SELL         exec=-          state=IDLE
+[bar 419] cyc_c89638bd214a final=SELL         exec=-          state=IDLE
+[bar 420] cyc_6743a86f337d final=BUY          exec=-          state=IDLE
+[bar 421] cyc_7a81dc6a01ae final=BUY          exec=-          state=IDLE
+[bar 422] cyc_e0724d07685d final=BUY          exec=-          state=IDLE
+[bar 423] cyc_efbcf9470067 final=BUY          exec=-          state=IDLE
+[bar 424] cyc_a4fb1303230e final=SELL         exec=-          state=IDLE
+[bar 425] cyc_15c9f2a07757 final=BUY          exec=-          state=IDLE
+[bar 426] cyc_c51a20cac940 final=BUY          exec=-          state=IDLE
+[bar 427] cyc_624ca64503ab final=BUY          exec=-          state=IDLE
+[bar 428] cyc_a8b79fed3552 final=SELL         exec=-          state=IDLE
+[bar 429] cyc_295d9039cbf5 final=SELL         exec=-          state=IDLE
+[bar 430] cyc_53609826b13f final=SELL         exec=-          state=IDLE
+[bar 431] cyc_b0828b8534e5 final=SELL         exec=-          state=IDLE
+[bar 432] cyc_149f113994e1 final=BUY          exec=-          state=IDLE
+[bar 433] cyc_1803d9c4b7cd final=SELL         exec=-          state=IDLE
+[bar 434] cyc_62151a2685b9 final=BUY          exec=-          state=IDLE
+[bar 435] cyc_08f0705731b6 final=BUY          exec=-          state=IDLE
+[bar 436] cyc_f38999e8e360 final=SELL         exec=-          state=IDLE
+[bar 437] cyc_a247ee629869 final=SELL         exec=-          state=IDLE
+[bar 438] cyc_4bf6202c9bc0 final=SELL         exec=-          state=IDLE
+[bar 439] cyc_1b2d44c4bc46 final=BUY          exec=-          state=IDLE
+[bar 440] cyc_b7ebc1efc456 final=SELL         exec=-          state=IDLE
+[bar 441] cyc_32f83946552b final=BUY          exec=-          state=IDLE
+[bar 442] cyc_eddfa6938747 final=BUY          exec=-          state=IDLE
+[bar 443] cyc_aba58ac11ada final=SELL         exec=-          state=IDLE
+[bar 444] cyc_91810a1aa40d final=BUY          exec=-          state=IDLE
+[bar 445] cyc_e715104f7cbd final=BUY          exec=-          state=IDLE
+[bar 446] cyc_1205897ce4da final=BUY          exec=-          state=IDLE
+[bar 447] cyc_34f3cf74f085 final=BUY          exec=-          state=IDLE
+[bar 448] cyc_2a0399f9451e final=SELL         exec=-          state=IDLE
+[bar 449] cyc_ed0221c3ce5c final=SELL         exec=-          state=IDLE
+[bar 450] cyc_a87f7fe39c06 final=BUY          exec=-          state=IDLE
+[bar 451] cyc_2cff74269117 final=SELL         exec=-          state=IDLE
+[bar 452] cyc_c4dcf8a64060 final=SELL         exec=-          state=IDLE
+[bar 453] cyc_fdd6d18d52be final=BUY          exec=-          state=IDLE
+[bar 454] cyc_b58dfb5dbf87 final=BUY          exec=-          state=IDLE
+[bar 455] cyc_b280b23cf364 final=SELL         exec=-          state=IDLE
+[bar 456] cyc_a04f91fee853 final=SELL         exec=-          state=IDLE
+[bar 457] cyc_53969e5918eb final=SELL         exec=-          state=IDLE
+[bar 458] cyc_0c86c61f3c24 final=SELL         exec=-          state=IDLE
+[bar 459] cyc_012a0bb08b32 final=SELL         exec=-          state=IDLE
+[bar 460] cyc_5399d3b1141f final=BUY          exec=-          state=IDLE
+[bar 461] cyc_b3b60e0bb2fd final=SELL         exec=-          state=IDLE
+[bar 462] cyc_d30560e1b1c4 final=BUY          exec=-          state=IDLE
+[bar 463] cyc_b699bd1be368 final=BUY          exec=-          state=IDLE
+[bar 464] cyc_d97517202627 final=BUY          exec=-          state=IDLE
+[bar 465] cyc_f377e90fcf24 final=SELL         exec=-          state=IDLE
+[bar 466] cyc_0b3bf8ac1b54 final=SELL         exec=-          state=IDLE
+[bar 467] cyc_99add039caf2 final=BUY          exec=-          state=IDLE
+[bar 468] cyc_feeb268465c3 final=BUY          exec=-          state=IDLE
+[bar 469] cyc_28e134fba4c0 final=BUY          exec=-          state=IDLE
+[bar 470] cyc_652926a1a67b final=BUY          exec=-          state=IDLE
+[bar 471] cyc_978016f2602a final=SELL         exec=-          state=IDLE
+[bar 472] cyc_ca67478c03b0 final=BUY          exec=-          state=IDLE
+[bar 473] cyc_4fd10071f062 final=BUY          exec=-          state=IDLE
+[bar 474] cyc_8dd91d17fee4 final=BUY          exec=-          state=IDLE
+[bar 475] cyc_a3333eb75f0e final=SELL         exec=-          state=IDLE
+[bar 476] cyc_1353c912f4a7 final=SELL         exec=-          state=IDLE
+[bar 477] cyc_2f6977ce6554 final=SELL         exec=-          state=IDLE
+[bar 478] cyc_93db7a37dc5d final=BUY          exec=-          state=IDLE
+[bar 479] cyc_c1b672c757f7 final=SELL         exec=-          state=IDLE
+[bar 480] cyc_e5463ae2712d final=BUY          exec=-          state=IDLE
+[bar 481] cyc_a6a3164d5a04 final=BUY          exec=-          state=IDLE
+[bar 482] cyc_530e49969f3a final=SELL         exec=-          state=IDLE
+[bar 483] cyc_9571cd27a1e1 final=SELL         exec=-          state=IDLE
+[bar 484] cyc_0e863e76efa5 final=SELL         exec=-          state=IDLE
+[bar 485] cyc_e00a274722b8 final=BUY          exec=-          state=IDLE
+[bar 486] cyc_907eeafd8e5f final=SELL         exec=-          state=IDLE
+[bar 487] cyc_c13dd2d808f9 final=SELL         exec=-          state=IDLE
+[bar 488] cyc_d2f95811e051 final=BUY          exec=-          state=IDLE
+[bar 489] cyc_00dcec9f4b28 final=BUY          exec=-          state=IDLE
+[bar 490] cyc_8d55df69c7ff final=SELL         exec=-          state=IDLE
+[bar 491] cyc_2dbc4776c5d5 final=SELL         exec=-          state=IDLE
+[bar 492] cyc_e6e8ab343d3a final=SELL         exec=-          state=IDLE
+[bar 493] cyc_d366595a57fd final=BUY          exec=-          state=IDLE
+[bar 494] cyc_ce1422b84631 final=SELL         exec=-          state=IDLE
+[bar 495] cyc_adf15e15f1c4 final=SELL         exec=-          state=IDLE
+[bar 496] cyc_a01a82c67935 final=WAIT         exec=-          state=IDLE
+[bar 497] cyc_03769b19625d final=SELL         exec=-          state=IDLE
+[bar 498] cyc_da56a0a53b64 final=BUY          exec=-          state=IDLE
+[bar 499] cyc_34b993d5d927 final=BUY          exec=-          state=IDLE
+[bar 500] cyc_693d42c783d0 final=BUY          exec=-          state=IDLE
+[bar 501] cyc_d816f5013fce final=BUY          exec=-          state=IDLE
+[bar 502] cyc_6ea837a39e1f final=BUY          exec=-          state=IDLE
+[bar 503] cyc_02892fe42087 final=SELL         exec=-          state=IDLE
+[bar 504] cyc_f6443655b941 final=SELL         exec=-          state=IDLE
+[bar 505] cyc_f3338862e236 final=SELL         exec=-          state=IDLE
+[bar 506] cyc_3d7f55f4d045 final=SELL         exec=-          state=IDLE
+[bar 507] cyc_8d6af6cb279d final=BUY          exec=-          state=IDLE
+[bar 508] cyc_7ddc5835af84 final=SELL         exec=-          state=IDLE
+[bar 509] cyc_244ace367a83 final=BUY          exec=-          state=IDLE
+[bar 510] cyc_85f81805e87d final=SELL         exec=-          state=IDLE
+[bar 511] cyc_6f0fdc84f82a final=SELL         exec=-          state=IDLE
+[bar 512] cyc_5185046e89aa final=BUY          exec=-          state=IDLE
+[bar 513] cyc_4ab71fcbd530 final=SELL         exec=-          state=IDLE
+[bar 514] cyc_e9e67222ec7f final=BUY          exec=-          state=IDLE
+[bar 515] cyc_657ba391fde9 final=SELL         exec=-          state=IDLE
+[bar 516] cyc_b175f5e83c89 final=BUY          exec=-          state=IDLE
+[bar 517] cyc_5f68fe84c63c final=SELL         exec=-          state=IDLE
+[bar 518] cyc_b7f002f18c02 final=BUY          exec=-          state=IDLE
+[bar 519] cyc_2664affa1865 final=BUY          exec=-          state=IDLE
+[bar 520] cyc_eb8cf110693e final=BUY          exec=-          state=IDLE
+[bar 521] cyc_69d97836936e final=BUY          exec=-          state=IDLE
+[bar 522] cyc_d41f395e7544 final=BUY          exec=-          state=IDLE
+[bar 523] cyc_601b11d6d118 final=BUY          exec=-          state=IDLE
+[bar 524] cyc_5b7a8cc38f7c final=BUY          exec=-          state=IDLE
+[bar 525] cyc_48398d2b1cf3 final=SELL         exec=-          state=IDLE
+[bar 526] cyc_4e1936cc4e23 final=WAIT         exec=-          state=IDLE
+[bar 527] cyc_691dcd74ad97 final=SELL         exec=-          state=IDLE
+[bar 528] cyc_00027fb734f2 final=BUY          exec=-          state=IDLE
+[bar 529] cyc_87c52b721122 final=BUY          exec=-          state=IDLE
+[bar 530] cyc_cbd8a64e5321 final=SELL         exec=-          state=IDLE
+[bar 531] cyc_0ed2ab543988 final=BUY          exec=-          state=IDLE
+[bar 532] cyc_0b370b146fdb final=WAIT         exec=-          state=IDLE
+[bar 533] cyc_383356640d25 final=SELL         exec=-          state=IDLE
+[bar 534] cyc_86727e2adcdf final=BUY          exec=-          state=IDLE
+[bar 535] cyc_8aafe5586b0e final=SELL         exec=-          state=IDLE
+[bar 536] cyc_7924d561d72f final=BUY          exec=-          state=IDLE
+[bar 537] cyc_80c562ab02ed final=BUY          exec=-          state=IDLE
+[bar 538] cyc_ba72755b7d7e final=SELL         exec=-          state=IDLE
+[bar 539] cyc_350aa877983d final=WAIT         exec=-          state=IDLE
+[bar 540] cyc_0919511c5435 final=BUY          exec=-          state=IDLE
+[bar 541] cyc_82dbfc7f5e04 final=SELL         exec=-          state=IDLE
+[bar 542] cyc_dc63de2d1179 final=SELL         exec=-          state=IDLE
+[bar 543] cyc_522e89d574ed final=SELL         exec=-          state=IDLE
+[bar 544] cyc_f5728ce98549 final=SELL         exec=-          state=IDLE
+[bar 545] cyc_9e81cdd7bb72 final=SELL         exec=-          state=IDLE
+[bar 546] cyc_1d5cf0792eab final=BUY          exec=-          state=IDLE
+[bar 547] cyc_bafff90c597d final=SELL         exec=-          state=IDLE
+[bar 548] cyc_671ee19683cd final=BUY          exec=-          state=IDLE
+[bar 549] cyc_f6b4c55040b2 final=BUY          exec=-          state=IDLE
+[bar 550] cyc_53b3b8e6c0b3 final=WAIT         exec=-          state=IDLE
+[bar 551] cyc_8859aec90288 final=SELL         exec=-          state=IDLE
+[bar 552] cyc_f506e1a9d8f5 final=BUY          exec=-          state=IDLE
+[bar 553] cyc_e95e4bb75fec final=SELL         exec=-          state=IDLE
+[bar 554] cyc_486c82420b4e final=SELL         exec=-          state=IDLE
+[bar 555] cyc_aad27ffa91c3 final=BUY          exec=-          state=IDLE
+[bar 556] cyc_af296e1759bc final=SELL         exec=-          state=IDLE
+[bar 557] cyc_4e1bdfb54a41 final=SELL         exec=-          state=IDLE
+[bar 558] cyc_5372875bde9c final=BUY          exec=-          state=IDLE
+[bar 559] cyc_cd85f91bfc20 final=SELL         exec=-          state=IDLE
+[bar 560] cyc_2227ed6ab0f6 final=SELL         exec=-          state=IDLE
+[bar 561] cyc_6a92a1cf0ee0 final=SELL         exec=-          state=IDLE
+[bar 562] cyc_2aaf28f6bfe9 final=BUY          exec=-          state=IDLE
+[bar 563] cyc_d8745c7aa9d8 final=BUY          exec=-          state=IDLE
+[bar 564] cyc_985711a21ad0 final=SELL         exec=-          state=IDLE
+[bar 565] cyc_5ba7c2f7a2dc final=SELL         exec=-          state=IDLE
+[bar 566] cyc_422823e347d8 final=BUY          exec=-          state=IDLE
+[bar 567] cyc_60cf4e0cb1b0 final=SELL         exec=-          state=IDLE
+[bar 568] cyc_57b252242538 final=SELL         exec=-          state=IDLE
+[bar 569] cyc_cc36ce8b516d final=SELL         exec=-          state=IDLE
+[bar 570] cyc_dee6482625e7 final=SELL         exec=-          state=IDLE
+[bar 571] cyc_c03936be8186 final=SELL         exec=-          state=IDLE
+[bar 572] cyc_47b82deaf26f final=BUY          exec=-          state=IDLE
+[bar 573] cyc_cce3b8cbdc38 final=BUY          exec=-          state=IDLE
+[bar 574] cyc_531be1425145 final=WAIT         exec=-          state=IDLE
+[bar 575] cyc_db4c0fd6291c final=SELL         exec=-          state=IDLE
+[bar 576] cyc_8af40fc5f137 final=SELL         exec=-          state=IDLE
+[bar 577] cyc_5d4d51a121b4 final=SELL         exec=-          state=IDLE
+[bar 578] cyc_65307ca80a22 final=SELL         exec=-          state=IDLE
+[bar 579] cyc_6199c1e32065 final=SELL         exec=-          state=IDLE
+[bar 580] cyc_637613b8f201 final=SELL         exec=-          state=IDLE
+[bar 581] cyc_8f3e59d29772 final=BUY          exec=-          state=IDLE
+[bar 582] cyc_d771b37abeab final=SELL         exec=-          state=IDLE
+[bar 583] cyc_b11f4fec2846 final=SELL         exec=-          state=IDLE
+[bar 584] cyc_e33a873ccc71 final=BUY          exec=-          state=IDLE
+[bar 585] cyc_a6d5492e60a2 final=SELL         exec=-          state=IDLE
+[bar 586] cyc_69a95adeb8b6 final=SELL         exec=-          state=IDLE
+[bar 587] cyc_d244a019c524 final=SELL         exec=-          state=IDLE
+[bar 588] cyc_9ae5124f69be final=BUY          exec=-          state=IDLE
+[bar 589] cyc_56470c57c0f3 final=BUY          exec=-          state=IDLE
+[bar 590] cyc_28f3cbc0330b final=SELL         exec=-          state=IDLE
+[bar 591] cyc_74bd41c87656 final=SELL         exec=-          state=IDLE
+[bar 592] cyc_b32babb25a07 final=SELL         exec=-          state=IDLE
+[bar 593] cyc_7e2ce5205186 final=SELL         exec=-          state=IDLE
+[bar 594] cyc_222653ae37a0 final=BUY          exec=-          state=IDLE
+[bar 595] cyc_773d6726bbf4 final=SELL         exec=-          state=IDLE
+[bar 596] cyc_d1b9a763a1b4 final=BUY          exec=-          state=IDLE
+[bar 597] cyc_40563612a932 final=BUY          exec=-          state=IDLE
+[bar 598] cyc_eb4b0248b2cc final=SELL         exec=-          state=IDLE
+[bar 599] cyc_6fb7c5afe0cf final=BUY          exec=-          state=IDLE
+[bar 600] cyc_a7ef0194ee7b final=SELL         exec=-          state=IDLE
+[bar 601] cyc_f2df059da275 final=BUY          exec=-          state=IDLE
+[bar 602] cyc_d68de63e4d35 final=SELL         exec=-          state=IDLE
+[bar 603] cyc_bf0b21450329 final=BUY          exec=-          state=IDLE
+[bar 604] cyc_0b7bc672edf1 final=WAIT         exec=-          state=IDLE
+[bar 605] cyc_f751b66407b3 final=SELL         exec=-          state=IDLE
+[bar 606] cyc_9b49aa750b31 final=SELL         exec=-          state=IDLE
+[bar 607] cyc_27a7ccd3de6c final=SELL         exec=-          state=IDLE
+[bar 608] cyc_88dc18cb6e69 final=BUY          exec=-          state=IDLE
+[bar 609] cyc_1202edaefb85 final=SELL         exec=-          state=IDLE
+[bar 610] cyc_5d8c1f34a2f6 final=SELL         exec=-          state=IDLE
+[bar 611] cyc_51c624662265 final=SELL         exec=-          state=IDLE
+[bar 612] cyc_4b9d15f088d7 final=SELL         exec=-          state=IDLE
+[bar 613] cyc_d7e0223d0416 final=SELL         exec=-          state=IDLE
+[bar 614] cyc_e57fa2125caa final=SELL         exec=-          state=IDLE
+[bar 615] cyc_14803d442bd8 final=BUY          exec=-          state=IDLE
+[bar 616] cyc_ca3f3b6d0907 final=BUY          exec=-          state=IDLE
+[bar 617] cyc_e9f4c28d379f final=SELL         exec=-          state=IDLE
+[bar 618] cyc_70978fe9acd3 final=BUY          exec=-          state=IDLE
+[bar 619] cyc_16a17eaf0bc4 final=BUY          exec=-          state=IDLE
+[bar 620] cyc_6380aae49c1c final=BUY          exec=-          state=IDLE
+[bar 621] cyc_a03a8e8f4a8a final=BUY          exec=-          state=IDLE
+[bar 622] cyc_ef09f3a8e728 final=SELL         exec=-          state=IDLE
+[bar 623] cyc_99142cc187ee final=BUY          exec=-          state=IDLE
+[bar 624] cyc_65f9bfaa70c9 final=BUY          exec=-          state=IDLE
+[bar 625] cyc_1e97e97c1e99 final=SELL         exec=-          state=IDLE
+[bar 626] cyc_3f3f19c7388f final=BUY          exec=-          state=IDLE
+[bar 627] cyc_005abe384123 final=SELL         exec=-          state=IDLE
+[bar 628] cyc_0bad894cea57 final=BUY          exec=-          state=IDLE
+[bar 629] cyc_15b8e648b0c4 final=BUY          exec=-          state=IDLE
+[bar 630] cyc_8b6040b2afe3 final=WAIT         exec=-          state=IDLE
+[bar 631] cyc_1b6b936c0955 final=BUY          exec=-          state=IDLE
+[bar 632] cyc_0fd0e16e45f4 final=SELL         exec=-          state=IDLE
+[bar 633] cyc_bf9ae2e8f736 final=SELL         exec=-          state=IDLE
+[bar 634] cyc_ed13dc8da7fe final=BUY          exec=-          state=IDLE
+[bar 635] cyc_4b67a065d91a final=BUY          exec=-          state=IDLE
+[bar 636] cyc_2402c9bf8550 final=BUY          exec=-          state=IDLE
+[bar 637] cyc_ca1fc295a34d final=BUY          exec=-          state=IDLE
+[bar 638] cyc_2b125f800fe2 final=SELL         exec=-          state=IDLE
+[bar 639] cyc_fc1c960bab02 final=BUY          exec=-          state=IDLE
+[bar 640] cyc_7109b147ef65 final=SELL         exec=-          state=IDLE
+[bar 641] cyc_5252d814b067 final=BUY          exec=-          state=IDLE
+[bar 642] cyc_67d75c9424e4 final=BUY          exec=-          state=IDLE
+[bar 643] cyc_601195961154 final=SELL         exec=-          state=IDLE
+[bar 644] cyc_cc18c520d4b6 final=WAIT         exec=-          state=IDLE
+[bar 645] cyc_6acf34c73ada final=SELL         exec=-          state=IDLE
+[bar 646] cyc_0c9e35a283ca final=SELL         exec=-          state=IDLE
+[bar 647] cyc_3dfdc3080ec5 final=BUY          exec=-          state=IDLE
+[bar 648] cyc_66f46453648e final=BUY          exec=-          state=IDLE
+[bar 649] cyc_40900a6be183 final=SELL         exec=-          state=IDLE
+[bar 650] cyc_05c2dfc73b90 final=BUY          exec=-          state=IDLE
+[bar 651] cyc_afb3509fe3c9 final=SELL         exec=-          state=IDLE
+[bar 652] cyc_884f100e06dc final=SELL         exec=-          state=IDLE
+[bar 653] cyc_666de05b483b final=BUY          exec=-          state=IDLE
+[bar 654] cyc_b5bb20c435d1 final=BUY          exec=-          state=IDLE
+[bar 655] cyc_740af7294149 final=SELL         exec=-          state=IDLE
+[bar 656] cyc_0951c4668dff final=SELL         exec=-          state=IDLE
+[bar 657] cyc_a49a022f9c4e final=BUY          exec=-          state=IDLE
+[bar 658] cyc_7903da10b59e final=BUY          exec=-          state=IDLE
+[bar 659] cyc_b68dbeb4a737 final=BUY          exec=-          state=IDLE
+[bar 660] cyc_5e9ca0ea5291 final=BUY          exec=-          state=IDLE
+[bar 661] cyc_6dd7b8f44c17 final=SELL         exec=-          state=IDLE
+[bar 662] cyc_6e7ac5fb7729 final=SELL         exec=-          state=IDLE
+[bar 663] cyc_dc117de5fa71 final=BUY          exec=-          state=IDLE
+[bar 664] cyc_fb184b5ee717 final=BUY          exec=-          state=IDLE
+[bar 665] cyc_5749836163de final=WAIT         exec=-          state=IDLE
+[bar 666] cyc_9b870c9e00ab final=SELL         exec=-          state=IDLE
+[bar 667] cyc_70222882051b final=WAIT         exec=-          state=IDLE
+[bar 668] cyc_cfad8e9d0f18 final=BUY          exec=-          state=IDLE
+[bar 669] cyc_97bd30e8a3e9 final=SELL         exec=-          state=IDLE
+[bar 670] cyc_d3e077b35cf0 final=SELL         exec=-          state=IDLE
+[bar 671] cyc_f83452c3c3b6 final=SELL         exec=-          state=IDLE
+[bar 672] cyc_389cc1a05c84 final=SELL         exec=-          state=IDLE
+[bar 673] cyc_2d59aeb6c7b3 final=SELL         exec=-          state=IDLE
+[bar 674] cyc_a0175d41d91a final=SELL         exec=-          state=IDLE
+[bar 675] cyc_8e8e9267f7fc final=WAIT         exec=-          state=IDLE
+[bar 676] cyc_4060770cb8dd final=BUY          exec=-          state=IDLE
+[bar 677] cyc_5a8992842310 final=BUY          exec=-          state=IDLE
+[bar 678] cyc_6edc4cf55c3d final=BUY          exec=-          state=IDLE
+[bar 679] cyc_d35405638d34 final=SELL         exec=-          state=IDLE
+[bar 680] cyc_3f73189724d4 final=BUY          exec=-          state=IDLE
+[bar 681] cyc_94f3e0440880 final=SELL         exec=-          state=IDLE
+[bar 682] cyc_ef8667f3d3a1 final=WAIT         exec=-          state=IDLE
+[bar 683] cyc_c00d333a0b3e final=SELL         exec=-          state=IDLE
+[bar 684] cyc_a757f2b2d116 final=SELL         exec=-          state=IDLE
+[bar 685] cyc_721898145869 final=SELL         exec=-          state=IDLE
+[bar 686] cyc_aca4789b3173 final=BUY          exec=-          state=IDLE
+[bar 687] cyc_5475e3f131f6 final=BUY          exec=-          state=IDLE
+[bar 688] cyc_c8e72b0751e4 final=BUY          exec=-          state=IDLE
+[bar 689] cyc_0618a63835cc final=SELL         exec=-          state=IDLE
+[bar 690] cyc_a2b6d8e3cc7b final=BUY          exec=-          state=IDLE
+[bar 691] cyc_5f5bf757035c final=SELL         exec=-          state=IDLE
+[bar 692] cyc_269dcea5c840 final=SELL         exec=-          state=IDLE
+[bar 693] cyc_2974c24c8388 final=BUY          exec=-          state=IDLE
+[bar 694] cyc_a4d168cd472e final=BUY          exec=-          state=IDLE
+[bar 695] cyc_d00277e5f4e8 final=SELL         exec=-          state=IDLE
+[bar 696] cyc_ee76bdb18c96 final=BUY          exec=-          state=IDLE
+[bar 697] cyc_ba85e8839e0d final=SELL         exec=-          state=IDLE
+[bar 698] cyc_966ed5669f31 final=BUY          exec=-          state=IDLE
+[bar 699] cyc_3d56b8a396f2 final=SELL         exec=-          state=IDLE
+[bar 700] cyc_9790217de343 final=BUY          exec=-          state=IDLE
+[bar 701] cyc_eb66326443d1 final=BUY          exec=-          state=IDLE
+[bar 702] cyc_0fe394adcc7d final=BUY          exec=-          state=IDLE
+[bar 703] cyc_1ec347541643 final=SELL         exec=-          state=IDLE
+[bar 704] cyc_6c73bb5b3926 final=BUY          exec=-          state=IDLE
+[bar 705] cyc_3e3869881b74 final=BUY          exec=-          state=IDLE
+[bar 706] cyc_1e247b8f9235 final=BUY          exec=-          state=IDLE
+[bar 707] cyc_07722a5d83e2 final=BUY          exec=-          state=IDLE
+[bar 708] cyc_60d7ee0afd61 final=SELL         exec=-          state=IDLE
+[bar 709] cyc_333d7b6609e0 final=SELL         exec=-          state=IDLE
+[bar 710] cyc_b8fe366a7400 final=BUY          exec=-          state=IDLE
+[bar 711] cyc_3741ad7182d7 final=BUY          exec=-          state=IDLE
+[bar 712] cyc_98cea641d076 final=SELL         exec=-          state=IDLE
+[bar 713] cyc_13507f318cce final=BUY          exec=-          state=IDLE
+[bar 714] cyc_bacd2256bd59 final=BUY          exec=-          state=IDLE
+[bar 715] cyc_01e77c4a6b38 final=BUY          exec=-          state=IDLE
+[bar 716] cyc_38cd23a991cf final=BUY          exec=-          state=IDLE
+[bar 717] cyc_6201130f8a6d final=SELL         exec=-          state=IDLE
+[bar 718] cyc_27b5667d524f final=SELL         exec=-          state=IDLE
+[bar 719] cyc_e7d172579965 final=SELL         exec=-          state=IDLE
+[bar 720] cyc_af6bdb66404d final=BUY          exec=-          state=IDLE
+[bar 721] cyc_83153a492d97 final=SELL         exec=-          state=IDLE
+[bar 722] cyc_3a873091f216 final=BUY          exec=-          state=IDLE
+[bar 723] cyc_a494a06920aa final=SELL         exec=-          state=IDLE
+[bar 724] cyc_4f637b4ce824 final=BUY          exec=-          state=IDLE
+[bar 725] cyc_0ac23b31f4e2 final=SELL         exec=-          state=IDLE
+[bar 726] cyc_b1ffbae318b6 final=SELL         exec=-          state=IDLE
+[bar 727] cyc_683236240f00 final=BUY          exec=-          state=IDLE
+[bar 728] cyc_6a78b9095b86 final=SELL         exec=-          state=IDLE
+[bar 729] cyc_16646463259d final=BUY          exec=-          state=IDLE
+[bar 730] cyc_67782ec975c4 final=SELL         exec=-          state=IDLE
+[bar 731] cyc_942390538671 final=SELL         exec=-          state=IDLE
+[bar 732] cyc_6aea7038ee2e final=BUY          exec=-          state=IDLE
+[bar 733] cyc_9c85efaa8f3b final=BUY          exec=-          state=IDLE
+[bar 734] cyc_d9cbd6d225dd final=SELL         exec=-          state=IDLE
+[bar 735] cyc_890629922893 final=WAIT         exec=-          state=IDLE
+[bar 736] cyc_540622ea314a final=SELL         exec=-          state=IDLE
+[bar 737] cyc_eaced2844550 final=SELL         exec=-          state=IDLE
+[bar 738] cyc_baf31f70e810 final=SELL         exec=-          state=IDLE
+[bar 739] cyc_6bc8707b9e7e final=WAIT         exec=-          state=IDLE
+[bar 740] cyc_84f7231a0e4c final=BUY          exec=-          state=IDLE
+[bar 741] cyc_02b099f584a0 final=BUY          exec=-          state=IDLE
+[bar 742] cyc_606322a8eb0f final=SELL         exec=-          state=IDLE
+[bar 743] cyc_9dc491f7666f final=SELL         exec=-          state=IDLE
+[bar 744] cyc_8688f04f8680 final=BUY          exec=-          state=IDLE
+[bar 745] cyc_1c80ed532766 final=BUY          exec=-          state=IDLE
+[bar 746] cyc_9f00f8e03122 final=SELL         exec=-          state=IDLE
+[bar 747] cyc_cd3025d9e2ab final=SELL         exec=-          state=IDLE
+[bar 748] cyc_6c9765b6e67e final=BUY          exec=-          state=IDLE
+[bar 749] cyc_c40ddfd9aa11 final=SELL         exec=-          state=IDLE
+[bar 750] cyc_770f407bb5b3 final=SELL         exec=-          state=IDLE
+[bar 751] cyc_214f1e06bf55 final=BUY          exec=-          state=IDLE
+[bar 752] cyc_e081252bd473 final=BUY          exec=-          state=IDLE
+[bar 753] cyc_e1d22b60c1e5 final=SELL         exec=-          state=IDLE
+[bar 754] cyc_0223e65d2595 final=BUY          exec=-          state=IDLE
+[bar 755] cyc_1203eafb43ff final=BUY          exec=-          state=IDLE
+[bar 756] cyc_39af466355a9 final=WAIT         exec=-          state=IDLE
+[bar 757] cyc_cd18f6117508 final=BUY          exec=-          state=IDLE
+[bar 758] cyc_27eb83906bca final=SELL         exec=-          state=IDLE
+[bar 759] cyc_84a593efdd71 final=WAIT         exec=-          state=IDLE
+[bar 760] cyc_f76eb13812a4 final=BUY          exec=-          state=IDLE
+[bar 761] cyc_8845fb42df0a final=BUY          exec=-          state=IDLE
+[bar 762] cyc_e906a7d706a1 final=SELL         exec=-          state=IDLE
+[bar 763] cyc_38a7c11206e1 final=BUY          exec=-          state=IDLE
+[bar 764] cyc_5e4dd9071c5c final=BUY          exec=-          state=IDLE
+[bar 765] cyc_fba2d936a906 final=SELL         exec=-          state=IDLE
+[bar 766] cyc_5ad75365bed4 final=SELL         exec=-          state=IDLE
+[bar 767] cyc_53c4e4c1f902 final=BUY          exec=-          state=IDLE
+[bar 768] cyc_3a87db8e1afd final=BUY          exec=-          state=IDLE
+[bar 769] cyc_347efbbe621d final=WAIT         exec=-          state=IDLE
+[bar 770] cyc_cadc65ba39b7 final=SELL         exec=-          state=IDLE
+[bar 771] cyc_37177cfda843 final=SELL         exec=-          state=IDLE
+[bar 772] cyc_998797031b91 final=SELL         exec=-          state=IDLE
+[bar 773] cyc_b4887d051360 final=BUY          exec=-          state=IDLE
+[bar 774] cyc_dffe0aff2055 final=BUY          exec=-          state=IDLE
+[bar 775] cyc_d4e7063f1d6a final=SELL         exec=-          state=IDLE
+[bar 776] cyc_1b8db5277e88 final=SELL         exec=-          state=IDLE
+[bar 777] cyc_7cf748cd360c final=SELL         exec=-          state=IDLE
+[bar 778] cyc_472b2103760f final=BUY          exec=-          state=IDLE
+[bar 779] cyc_47e483c67d4a final=SELL         exec=-          state=IDLE
+[bar 780] cyc_4e149773beea final=WAIT         exec=-          state=IDLE
+[bar 781] cyc_340c45de998e final=SELL         exec=-          state=IDLE
+[bar 782] cyc_446aae6c9e0b final=BUY          exec=-          state=IDLE
+[bar 783] cyc_668a62d827b6 final=SELL         exec=-          state=IDLE
+[bar 784] cyc_d30d55ce2803 final=BUY          exec=-          state=IDLE
+[bar 785] cyc_2569434cc3ef final=BUY          exec=-          state=IDLE
+[bar 786] cyc_95d4f3fa2b7f final=SELL         exec=-          state=IDLE
+[bar 787] cyc_dbb91bba5d6f final=SELL         exec=-          state=IDLE
+[bar 788] cyc_48ece3a0b06b final=SELL         exec=-          state=IDLE
+[bar 789] cyc_172c898362fa final=SELL         exec=-          state=IDLE
+[bar 790] cyc_fcd2c1741236 final=BUY          exec=-          state=IDLE
+[bar 791] cyc_378b3bcd6f2d final=SELL         exec=-          state=IDLE
+[bar 792] cyc_86b8d3a34d2b final=SELL         exec=-          state=IDLE
+[bar 793] cyc_068bfcfa7695 final=BUY          exec=-          state=IDLE
+[bar 794] cyc_e42d3bd0805e final=SELL         exec=-          state=IDLE
+[bar 795] cyc_8f3bf96ed924 final=BUY          exec=-          state=IDLE
+[bar 796] cyc_7220bcf19ceb final=BUY          exec=-          state=IDLE
+[bar 797] cyc_201edff2fb43 final=BUY          exec=-          state=IDLE
+[bar 798] cyc_f959acc9ad1f final=BUY          exec=-          state=IDLE
+[bar 799] cyc_8f3a97c0b6b8 final=WAIT         exec=-          state=IDLE
+[bar 800] cyc_7c17ceccf293 final=SELL         exec=-          state=IDLE
+[bar 801] cyc_83d2db125959 final=BUY          exec=-          state=IDLE
+[bar 802] cyc_3f0dee13a222 final=SELL         exec=-          state=IDLE
+[bar 803] cyc_2f8be62da0cf final=BUY          exec=-          state=IDLE
+[bar 804] cyc_9ff5057a7593 final=BUY          exec=-          state=IDLE
+[bar 805] cyc_02982f97b52d final=BUY          exec=-          state=IDLE
+[bar 806] cyc_b5d241698ac8 final=SELL         exec=-          state=IDLE
+[bar 807] cyc_d0604ee55aaf final=BUY          exec=-          state=IDLE
+[bar 808] cyc_f9789bf4263d final=BUY          exec=-          state=IDLE
+[bar 809] cyc_9c10958cd0c3 final=SELL         exec=-          state=IDLE
+[bar 810] cyc_ad026e13896e final=SELL         exec=-          state=IDLE
+[bar 811] cyc_a36969a1b64b final=SELL         exec=-          state=IDLE
+[bar 812] cyc_aba4fbb007f9 final=BUY          exec=-          state=IDLE
+[bar 813] cyc_e0c1e5707cd8 final=BUY          exec=-          state=IDLE
+[bar 814] cyc_e820aa63e1b1 final=SELL         exec=-          state=IDLE
+[bar 815] cyc_1d56c58d5b0d final=SELL         exec=-          state=IDLE
+[bar 816] cyc_61f34e4b547a final=BUY          exec=-          state=IDLE
+[bar 817] cyc_0efb37f44bf7 final=BUY          exec=-          state=IDLE
+[bar 818] cyc_76bb67593f51 final=BUY          exec=-          state=IDLE
+[bar 819] cyc_f3e45b0d99de final=BUY          exec=-          state=IDLE
+[bar 820] cyc_4e853429706a final=WAIT         exec=-          state=IDLE
+[bar 821] cyc_4015387cf955 final=SELL         exec=-          state=IDLE
+[bar 822] cyc_99a3086e0ba5 final=BUY          exec=-          state=IDLE
+[bar 823] cyc_871893f88631 final=BUY          exec=-          state=IDLE
+[bar 824] cyc_59afcfb37612 final=BUY          exec=-          state=IDLE
+[bar 825] cyc_e94e87016df3 final=SELL         exec=-          state=IDLE
+[bar 826] cyc_5ac4d1b0e931 final=SELL         exec=-          state=IDLE
+[bar 827] cyc_66db38bde864 final=BUY          exec=-          state=IDLE
+[bar 828] cyc_504b712141c8 final=SELL         exec=-          state=IDLE
+[bar 829] cyc_aa87432346fe final=SELL         exec=-          state=IDLE
+[bar 830] cyc_538faeab7f52 final=BUY          exec=-          state=IDLE
+[bar 831] cyc_730f566dc20d final=SELL         exec=-          state=IDLE
+[bar 832] cyc_81a479534c0f final=SELL         exec=-          state=IDLE
+[bar 833] cyc_0eb4b870d5f6 final=WAIT         exec=-          state=IDLE
+[bar 834] cyc_46c29e44d155 final=SELL         exec=-          state=IDLE
+[bar 835] cyc_18c3ed6ed207 final=SELL         exec=-          state=IDLE
+[bar 836] cyc_e941bb87a678 final=SELL         exec=-          state=IDLE
+[bar 837] cyc_ff6b5c9a54b4 final=SELL         exec=-          state=IDLE
+[bar 838] cyc_d2b505318bf8 final=BUY          exec=-          state=IDLE
+[bar 839] cyc_15fe595dc852 final=SELL         exec=-          state=IDLE
+[bar 840] cyc_f2605d7f83af final=WAIT         exec=-          state=IDLE
+[bar 841] cyc_05541322b5dd final=BUY          exec=-          state=IDLE
+[bar 842] cyc_f5503975f51c final=BUY          exec=-          state=IDLE
+[bar 843] cyc_7efed1605cb7 final=BUY          exec=-          state=IDLE
+[bar 844] cyc_6c6e631a2083 final=BUY          exec=-          state=IDLE
+[bar 845] cyc_e1b753422719 final=BUY          exec=-          state=IDLE
+[bar 846] cyc_5253cd5ebc61 final=SELL         exec=-          state=IDLE
+[bar 847] cyc_c24469495c90 final=BUY          exec=-          state=IDLE
+[bar 848] cyc_c7f05f5110f8 final=SELL         exec=-          state=IDLE
+[bar 849] cyc_61048808c956 final=BUY          exec=-          state=IDLE
+[bar 850] cyc_1ea0cc8aa6ec final=BUY          exec=-          state=IDLE
+[bar 851] cyc_62d0a776839c final=SELL         exec=-          state=IDLE
+[bar 852] cyc_11f23ed37789 final=SELL         exec=-          state=IDLE
+[bar 853] cyc_e290a045c33e final=BUY          exec=-          state=IDLE
+[bar 854] cyc_732a09f3f2fa final=BUY          exec=-          state=IDLE
+[bar 855] cyc_4b61ad7f74a8 final=BUY          exec=-          state=IDLE
+[bar 856] cyc_15996518544f final=BUY          exec=-          state=IDLE
+[bar 857] cyc_a123d6774f06 final=BUY          exec=-          state=IDLE
+[bar 858] cyc_365d0c3c93a2 final=BUY          exec=-          state=IDLE
+[bar 859] cyc_a687bd35e85a final=SELL         exec=-          state=IDLE
+[bar 860] cyc_5b28bc33ad14 final=WAIT         exec=-          state=IDLE
+[bar 861] cyc_0d6dd574988d final=SELL         exec=-          state=IDLE
+[bar 862] cyc_0ea3d9ccc8a5 final=BUY          exec=-          state=IDLE
+[bar 863] cyc_dd87f4b357bb final=BUY          exec=-          state=IDLE
+[bar 864] cyc_3508165bf392 final=BUY          exec=-          state=IDLE
+[bar 865] cyc_8a5851cf7218 final=SELL         exec=-          state=IDLE
+[bar 866] cyc_81216cbdf8fe final=BUY          exec=-          state=IDLE
+[bar 867] cyc_2888f9e13cc9 final=SELL         exec=-          state=IDLE
+[bar 868] cyc_b33c7535fcae final=SELL         exec=-          state=IDLE
+[bar 869] cyc_3060c3487785 final=BUY          exec=-          state=IDLE
+[bar 870] cyc_bee267b65677 final=SELL         exec=-          state=IDLE
+[bar 871] cyc_164df706451e final=BUY          exec=-          state=IDLE
+[bar 872] cyc_b41d48dd4248 final=BUY          exec=-          state=IDLE
+[bar 873] cyc_4b5790e3d252 final=BUY          exec=-          state=IDLE
+[bar 874] cyc_858263519810 final=BUY          exec=-          state=IDLE
+[bar 875] cyc_75cb19c3549a final=SELL         exec=-          state=IDLE
+[bar 876] cyc_5b48bcc90021 final=SELL         exec=-          state=IDLE
+[bar 877] cyc_36d76309e371 final=BUY          exec=-          state=IDLE
+[bar 878] cyc_339a889ac6c8 final=BUY          exec=-          state=IDLE
+[bar 879] cyc_1564c524ec14 final=SELL         exec=-          state=IDLE
+[bar 880] cyc_0faacccddac2 final=BUY          exec=-          state=IDLE
+[bar 881] cyc_f8b938e45c42 final=BUY          exec=-          state=IDLE
+[bar 882] cyc_5b579da3acfd final=SELL         exec=-          state=IDLE
+[bar 883] cyc_8fa68b21ecbe final=SELL         exec=-          state=IDLE
+[bar 884] cyc_282bc6904fa4 final=BUY          exec=-          state=IDLE
+[bar 885] cyc_e4db6e8bdd3b final=BUY          exec=-          state=IDLE
+[bar 886] cyc_29b51e2f08eb final=BUY          exec=-          state=IDLE
+[bar 887] cyc_b6c430083ca7 final=BUY          exec=-          state=IDLE
+[bar 888] cyc_c38ffa434fe8 final=BUY          exec=-          state=IDLE
+[bar 889] cyc_112f8681d7ac final=BUY          exec=-          state=IDLE
+[bar 890] cyc_647585210731 final=BUY          exec=-          state=IDLE
+[bar 891] cyc_853ca2a52b6f final=BUY          exec=-          state=IDLE
+[bar 892] cyc_63540ccd9016 final=SELL         exec=-          state=IDLE
+[bar 893] cyc_a44fc03d7c89 final=BUY          exec=-          state=IDLE
+[bar 894] cyc_efdefdeafec6 final=SELL         exec=-          state=IDLE
+[bar 895] cyc_273e3b0fc21d final=SELL         exec=-          state=IDLE
+[bar 896] cyc_066757b8bfe6 final=SELL         exec=-          state=IDLE
+[bar 897] cyc_a4bf2dda86e2 final=SELL         exec=-          state=IDLE
+[bar 898] cyc_efd2b361ef6a final=SELL         exec=-          state=IDLE
+[bar 899] cyc_e594d02774b6 final=BUY          exec=-          state=IDLE
+[bar 900] cyc_2c9e4071fa8b final=BUY          exec=-          state=IDLE
+[bar 901] cyc_eb19dcb775de final=BUY          exec=-          state=IDLE
+[bar 902] cyc_dd5344ccdf18 final=WAIT         exec=-          state=IDLE
+[bar 903] cyc_3f0e293de95b final=BUY          exec=-          state=IDLE
+[bar 904] cyc_65e9e15e99c4 final=SELL         exec=-          state=IDLE
+[bar 905] cyc_4d46aee12141 final=SELL         exec=-          state=IDLE
+[bar 906] cyc_c7a26f5142e5 final=SELL         exec=-          state=IDLE
+[bar 907] cyc_8de85909d348 final=BUY          exec=-          state=IDLE
+[bar 908] cyc_cff1ea271573 final=BUY          exec=-          state=IDLE
+[bar 909] cyc_cf4f453d5d18 final=SELL         exec=-          state=IDLE
+[bar 910] cyc_e4fd135204c9 final=SELL         exec=-          state=IDLE
+[bar 911] cyc_ca72d7b3d3e5 final=BUY          exec=-          state=IDLE
+[bar 912] cyc_3e22035b3594 final=SELL         exec=-          state=IDLE
+[bar 913] cyc_78da36d74f93 final=BUY          exec=-          state=IDLE
+[bar 914] cyc_f256155728a0 final=SELL         exec=-          state=IDLE
+[bar 915] cyc_57799d1ba52a final=SELL         exec=-          state=IDLE
+[bar 916] cyc_7e746e340047 final=BUY          exec=-          state=IDLE
+[bar 917] cyc_8266cfd7de53 final=BUY          exec=-          state=IDLE
+[bar 918] cyc_c24c92a8f2a3 final=BUY          exec=-          state=IDLE
+[bar 919] cyc_9d290e03e96f final=BUY          exec=-          state=IDLE
+[bar 920] cyc_16a937ae766c final=SELL         exec=-          state=IDLE
+[bar 921] cyc_76dd2ed6507c final=BUY          exec=-          state=IDLE
+[bar 922] cyc_d2a354bc6488 final=BUY          exec=-          state=IDLE
+[bar 923] cyc_de9d2c51eab2 final=SELL         exec=-          state=IDLE
+[bar 924] cyc_3eeffbd0c273 final=BUY          exec=-          state=IDLE
+[bar 925] cyc_e054a1bff739 final=SELL         exec=-          state=IDLE
+[bar 926] cyc_584311914cc7 final=SELL         exec=-          state=IDLE
+[bar 927] cyc_febccacecdd4 final=SELL         exec=-          state=IDLE
+[bar 928] cyc_252a62f24353 final=SELL         exec=-          state=IDLE
+[bar 929] cyc_ce5059888186 final=SELL         exec=-          state=IDLE
+[bar 930] cyc_6955387de491 final=BUY          exec=-          state=IDLE
+[bar 931] cyc_13d4cc4bd3f7 final=SELL         exec=-          state=IDLE
+[bar 932] cyc_7e6a1b10a6ee final=BUY          exec=-          state=IDLE
+[bar 933] cyc_836b27e0aaf4 final=WAIT         exec=-          state=IDLE
+[bar 934] cyc_c0ba84693787 final=BUY          exec=-          state=IDLE
+[bar 935] cyc_bb71a4b0e8ec final=SELL         exec=-          state=IDLE
+[bar 936] cyc_bc1e9d6e4a5b final=WAIT         exec=-          state=IDLE
+[bar 937] cyc_abba7b68fd9d final=SELL         exec=-          state=IDLE
+[bar 938] cyc_bf6bffaf0fe1 final=BUY          exec=-          state=IDLE
+[bar 939] cyc_6697cac4fe58 final=BUY          exec=-          state=IDLE
+[bar 940] cyc_e25264c635fe final=SELL         exec=-          state=IDLE
+[bar 941] cyc_150754939998 final=SELL         exec=-          state=IDLE
+[bar 942] cyc_0f6263d40cef final=BUY          exec=-          state=IDLE
+[bar 943] cyc_8c2a40e24b6a final=SELL         exec=-          state=IDLE
+[bar 944] cyc_a0a3ca909758 final=SELL         exec=-          state=IDLE
+[bar 945] cyc_b6bc0bc0386f final=WAIT         exec=-          state=IDLE
+[bar 946] cyc_d3444988bdc0 final=WAIT         exec=-          state=IDLE
+[bar 947] cyc_f035e9f801df final=BUY          exec=-          state=IDLE
+[bar 948] cyc_ad553846f5f1 final=SELL         exec=-          state=IDLE
+[bar 949] cyc_82c07d81017c final=BUY          exec=-          state=IDLE
+[bar 950] cyc_691800c8bb89 final=BUY          exec=-          state=IDLE
+[bar 951] cyc_88177abfb4a4 final=SELL         exec=-          state=IDLE
+[bar 952] cyc_90d41ceb5a39 final=BUY          exec=-          state=IDLE
+[bar 953] cyc_dd324584a9f5 final=BUY          exec=-          state=IDLE
+[bar 954] cyc_15d253c7303e final=BUY          exec=-          state=IDLE
+[bar 955] cyc_cf12bd8ab924 final=SELL         exec=-          state=IDLE
+[bar 956] cyc_27264dba688a final=SELL         exec=-          state=IDLE
+[bar 957] cyc_3ec4646d2533 final=SELL         exec=-          state=IDLE
+[bar 958] cyc_5787e3367d1e final=SELL         exec=-          state=IDLE
+[bar 959] cyc_011d1365ee93 final=WAIT         exec=-          state=IDLE
+[bar 960] cyc_e81d0d3979e1 final=SELL         exec=-          state=IDLE
+[bar 961] cyc_cee8b4bbb15f final=SELL         exec=-          state=IDLE
+[bar 962] cyc_f89f403836fe final=SELL         exec=-          state=IDLE
+[bar 963] cyc_3ef8d1f71c5b final=BUY          exec=-          state=IDLE
+[bar 964] cyc_03bffd9a35f6 final=SELL         exec=-          state=IDLE
+[bar 965] cyc_da0f1f6353c9 final=SELL         exec=-          state=IDLE
+[bar 966] cyc_2621a37f17a8 final=SELL         exec=-          state=IDLE
+[bar 967] cyc_170c7f4e6530 final=BUY          exec=-          state=IDLE
+[bar 968] cyc_c60d9f014547 final=BUY          exec=-          state=IDLE
+[bar 969] cyc_77eb4e189406 final=SELL         exec=-          state=IDLE
+[bar 970] cyc_89e1db930b1c final=SELL         exec=-          state=IDLE
+[bar 971] cyc_fcbdf9674517 final=SELL         exec=-          state=IDLE
+[bar 972] cyc_afb57aad3c80 final=WAIT         exec=-          state=IDLE
+[bar 973] cyc_d8c4a8512da7 final=SELL         exec=-          state=IDLE
+[bar 974] cyc_5492d09b2406 final=SELL         exec=-          state=IDLE
+[bar 975] cyc_2a2f51901954 final=BUY          exec=-          state=IDLE
+[bar 976] cyc_fe4c4b4ae0f2 final=BUY          exec=-          state=IDLE
+[bar 977] cyc_b811f137f3db final=BUY          exec=-          state=IDLE
+[bar 978] cyc_30a21533a311 final=BUY          exec=-          state=IDLE
+[bar 979] cyc_57143a720280 final=SELL         exec=-          state=IDLE
+[bar 980] cyc_53c34676b5cb final=BUY          exec=-          state=IDLE
+[bar 981] cyc_6e413e53dbbb final=SELL         exec=-          state=IDLE
+[bar 982] cyc_4fefc15834f2 final=WAIT         exec=-          state=IDLE
+[bar 983] cyc_422c3932c20b final=BUY          exec=-          state=IDLE
+[bar 984] cyc_1cc92f2b7a0a final=BUY          exec=-          state=IDLE
+[bar 985] cyc_c268c41218f8 final=BUY          exec=-          state=IDLE
+[bar 986] cyc_a96cf532fc2c final=SELL         exec=-          state=IDLE
+[bar 987] cyc_4a3665f8fb90 final=SELL         exec=-          state=IDLE
+[bar 988] cyc_e9af501c299b final=SELL         exec=-          state=IDLE
+[bar 989] cyc_7f5e9a7e1f21 final=BUY          exec=-          state=IDLE
+[bar 990] cyc_57fc07e7f125 final=BUY          exec=-          state=IDLE
+[bar 991] cyc_033b8803f6f7 final=SELL         exec=-          state=IDLE
+[bar 992] cyc_ef67746d6df4 final=SELL         exec=-          state=IDLE
+[bar 993] cyc_e396007861cb final=BUY          exec=-          state=IDLE
+[bar 994] cyc_718234101371 final=SELL         exec=-          state=IDLE
+[bar 995] cyc_3862ccc6b780 final=BUY          exec=-          state=IDLE
+[bar 996] cyc_fa9e621b5c74 final=BUY          exec=-          state=IDLE
+[bar 997] cyc_24d0d6b894f6 final=BUY          exec=-          state=IDLE
+[bar 998] cyc_2e6fa84c37f8 final=SELL         exec=-          state=IDLE
+[bar 999] cyc_365ad2d0b1ab final=BUY          exec=-          state=IDLE
+
+Backtest summary:
+{
+  "bars_replayed": 1000,
+  "buys": 463,
+  "sells": 466,
+  "waits": 71,
+  "reevals": 0,
+  "filled": 130
+}
+
+[17/18] REAL PUBLIC MARKET DATA — READ ONLY
+======================================================================
+REAL PUBLIC MARKET DATA PROBE
+======================================================================
+
+SOURCE: kraken
+URL: https://api.kraken.com/0/public/OHLC?pair=XBTUSDT&interval=1
+REAL_DATA: FAILED
+ERROR: <HTTPError 403: 'Forbidden'>
+
+SOURCE: binance
+URL: https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=20
+REAL_DATA: FAILED
+ERROR: URLError(OSError(101, 'Network is unreachable'))
+
+REAL DATA PROBE FINISHED
+
+[18/18] FINAL STATE + ARTIFACTS
+{
+  "python": "3.13.12",
+  "config": "ok",
+  "mode": "paper",
+  "market_data": "mock",
+  "db": "data/trader.db"
+}
+
+DATABASE:
+-rw-r--r-- 1 moeid moeid 3.4M Sep 27 22:17 data/trader.db
+
+VALIDATION LOG:
+data/final_validation/final_20260927T184728Z.log
+
+====================================================================
+ FINAL VALIDATION FINISHED
+====================================================================
+
+IMPORTANT:
+This test NEVER sends a real exchange order.
+Real public market APIs are READ-ONLY.
+Paper/backtest execution is simulation only.
+
+Send me the COMPLETE output of this command.
+                                                                                                                   
+┌──(.venv)─(moeid㉿kali)-[~/Desktop/19/TEXTRADER_X_4_0_2_FINAL]
+└─$ 

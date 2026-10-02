@@ -1,0 +1,15 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/moeid/Desktop/15/FINAL/trader/cli.py", line 294, in <module>
+    main()
+    ~~~~^^
+  File "/home/moeid/Desktop/15/FINAL/trader/cli.py", line 290, in main
+    raise SystemExit(args.func(args))
+                     ~~~~~~~~~^^^^^^
+  File "/home/moeid/Desktop/15/FINAL/trader/cli.py", line 174, in cmd_kill
+    o = _build_orchestrator(args)
+  File "/home/moeid/Desktop/15/FINAL/trader/cli.py", line 30, in _build_orchestrator
+    if args.symbol:
+       ^^^^^^^^^^^
+AttributeError: 'Namespace' object has no attribute 'symbol'

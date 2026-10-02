@@ -1,0 +1,6 @@
+cycles 1000
+errors 0
+elapsed_sec 7.496061001000271
+cycles_per_sec 133.40339677953
+observed_error_rate_pct 0.0
+state IDLE

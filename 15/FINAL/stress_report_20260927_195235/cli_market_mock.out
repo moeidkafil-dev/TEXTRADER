@@ -1,0 +1,2 @@
+ERROR: market data request failed: <urlopen error [Errno 101] Network is unreachable>
+Hint: verify internet/DNS access and that the exchange endpoint is reachable.

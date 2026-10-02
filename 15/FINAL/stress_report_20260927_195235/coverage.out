@@ -1,0 +1,70 @@
+........................................................................ [ 82%]
+...............                                                          [100%]
+=============================== warnings summary ===============================
+.venv/lib/python3.13/site-packages/fastapi/testclient.py:1
+  /home/moeid/Desktop/15/FINAL/.venv/lib/python3.13/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.13.12-final-0 _______________
+
+Name                                    Stmts   Miss  Cover   Missing
+---------------------------------------------------------------------
+trader/__init__.py                          5      0   100%
+trader/adapters/__init__.py                 0      0   100%
+trader/adapters/broker/__init__.py         10      4    60%   11-14
+trader/adapters/broker/base.py             26      0   100%
+trader/adapters/broker/ccxt.py             39     39     0%   6-55
+trader/adapters/broker/mock.py             36      6    83%   29, 33, 42, 57, 61-62
+trader/adapters/llm.py                    105     55    48%   61-70, 87-88, 93-105, 122-124, 129-143, 157-159, 164-178, 204, 208, 214-218, 241-245, 249-263
+trader/adapters/source_connector.py       121    121     0%   26-192
+trader/cli.py                             226    124    45%   17, 21, 25-36, 40-52, 56-67, 71-75, 79-88, 93-101, 105-107, 111-114, 118-127, 131-136, 140-148, 152-156, 160-163, 167-170, 174-180, 184-194, 282-284, 288-290, 294
+trader/core/__init__.py                     0      0   100%
+trader/core/config.py                     104     17    84%   51, 94, 98, 110, 112, 121, 137-144, 150, 157-158
+trader/core/invariants.py                  28     28     0%   15-69
+trader/core/schemas.py                    215      7    97%   142, 200, 332-334, 363, 365
+trader/core/state_machine.py               61      2    97%   107, 124
+trader/core/util.py                        33      5    85%   22, 35, 39, 48-49
+trader/engine/__init__.py                   2      0   100%
+trader/engine/orchestrator.py             336     48    86%   227-231, 281, 310-314, 333-337, 383-390, 398-406, 490-498, 508, 534-539, 545, 564-565
+trader/knowledge.py                        23     23     0%   6-43
+trader/market/__init__.py                   2      0   100%
+trader/market/binance.py                   55     19    65%   22-29, 36, 39, 42, 67-106
+trader/memory/__init__.py                   4      0   100%
+trader/memory/db_manager.py                40      1    98%   62
+trader/memory/manager.py                  103     10    90%   101, 146-152, 161-163
+trader/memory/stores.py                    69      1    99%   137
+trader/research.py                         21     21     0%   6-38
+trader/scripts/__init__.py                  0      0   100%
+trader/scripts/run_backtest.py             57     57     0%   2-81
+trader/scripts/run_demo.py                 17     17     0%   2-24
+trader/scripts/run_paper.py                38     38     0%   2-63
+trader/scripts/run_research.py              7      7     0%   1-8
+trader/services/__init__.py                 0      0   100%
+trader/services/agent1.py                  57     11    81%   52-56, 75-77, 100-105
+trader/services/agent2.py                  88     16    82%   59, 65-74, 88-90, 100, 112, 138, 156, 160, 172, 191, 203
+trader/services/agent3.py                  66     15    77%   51, 56-59, 76-78, 83, 100-102, 116-119
+trader/services/agent_base.py              62      3    95%   57, 81-82
+trader/services/context_service.py         47      6    87%   44, 56-58, 69-70
+trader/services/data_reader.py             80      5    94%   26, 139-144
+trader/services/decision_engine.py         46      3    93%   25, 35, 57
+trader/services/decision_validator.py      34      9    74%   30, 32, 34, 36, 38, 46, 51-53
+trader/services/execution_guard.py         22      0   100%
+trader/services/final_tools.py             36      5    86%   28, 65-69
+trader/services/kill_switch.py             56     21    62%   34-35, 39-40, 45, 55-56, 60-75
+trader/services/message_service.py         79     17    78%   33-36, 44-52, 92, 95, 124-127, 140-141
+trader/services/metrics.py                 23     23     0%   2-33
+trader/services/observability.py           52     13    75%   35, 38-39, 54-57, 64-66, 69-72
+trader/services/position_sizer.py          24      2    92%   26, 29
+trader/services/risk_engine.py             66      9    86%   55-68
+trader/services/super_agent.py             42      5    88%   24-28
+trader/storage/__init__.py                  3      0   100%
+trader/storage/connection.py               56      7    88%   28, 37-40, 71, 75
+trader/storage/repo.py                    106     24    77%   26, 28, 38-39, 115-116, 129-130, 185-190, 203-214
+trader/storage/schema.py                    8      1    88%   155
+trader/web/__init__.py                      0      0   100%
+trader/web/server.py                      277     79    71%   96-98, 108, 111, 115, 117, 119, 121, 126, 130, 133, 142, 149, 159, 236, 246-252, 256-266, 275, 279-282, 286-288, 292-294, 298, 303-304, 308-318, 322-323, 328-330, 334-336, 340-344, 348-350, 357, 384-387
+---------------------------------------------------------------------
+TOTAL                                    3113    924    70%
+Coverage HTML written to dir /home/moeid/Desktop/15/FINAL/stress_report_20260927_195235/coverage_html

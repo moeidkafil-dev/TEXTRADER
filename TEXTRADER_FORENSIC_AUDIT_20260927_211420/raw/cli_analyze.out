@@ -1,0 +1,161 @@
+{
+  "cycle_id": "cyc_314c1e296231",
+  "initial": {
+    "cycle_id": "cyc_314c1e296231",
+    "action": "BUY",
+    "instrument": "BTC/USDT",
+    "rationale": "close 99.6477 > open 99.4976; range 0.007",
+    "assumptions": [
+      "mock_llm_policy",
+      "no_look_ahead"
+    ],
+    "evidence": [
+      "market_data",
+      "memory",
+      "user_config"
+    ],
+    "ts": "2026-09-27T17:46:04.705743+00:00"
+  },
+  "failure": {
+    "cycle_id": "cyc_314c1e296231",
+    "paths": [
+      {
+        "category": "wrong_prediction",
+        "description": "direction call may be wrong; no edge measurement available",
+        "severity": "med"
+      },
+      {
+        "category": "logical_inconsistency",
+        "description": "assumptions exist but logical chain not explicitly justified",
+        "severity": "low"
+      },
+      {
+        "category": "missing_data",
+        "description": "no missing bundles detected",
+        "severity": "low"
+      },
+      {
+        "category": "invalid_assumption",
+        "description": "instrument present; assumptions consistent",
+        "severity": "low"
+      },
+      {
+        "category": "risk_violation",
+        "description": "Risk Engine check pending; cannot pre-judge numeric violations",
+        "severity": "low"
+      },
+      {
+        "category": "contradictory_evidence",
+        "description": "news and price action broadly consistent",
+        "severity": "low"
+      },
+      {
+        "category": "tool_failure",
+        "description": "no agent-side tools invoked yet",
+        "severity": "low"
+      },
+      {
+        "category": "model_uncertainty",
+        "description": "no calibrated probability estimate attached to initial decision",
+        "severity": "med"
+      },
+      {
+        "category": "execution_impossibility",
+        "description": "order book has liquidity both sides",
+        "severity": "low"
+      }
+    ],
+    "ts": "2026-09-27T17:46:04.707105+00:00"
+  },
+  "final": {
+    "cycle_id": "cyc_314c1e296231",
+    "decision": "BUY",
+    "overrode_initial": false,
+    "reason": "no blocking failures; accepting initial",
+    "ts": "2026-09-27T17:46:04.708780+00:00"
+  },
+  "order": {
+    "order_id": "e271a82b-ba95-4762-a9f8-d70a10f360a7",
+    "idempotency_key": "ik_b45d87496f3f",
+    "cycle_id": "cyc_314c1e296231",
+    "side": "BUY",
+    "instrument": "BTC/USDT",
+    "size": 100.35354554094076,
+    "sl": 98.651223,
+    "tp": 101.640654,
+    "ts": "2026-09-27T17:46:04.709192+00:00"
+  },
+  "veto": {
+    "order_id": "e271a82b-ba95-4762-a9f8-d70a10f360a7",
+    "notified_at": "2026-09-27T17:46:04.710117+00:00",
+    "response": "SILENCE",
+    "responded_at": "2026-09-27T17:46:04.710130+00:00"
+  },
+  "risk": {
+    "order_id": "e271a82b-ba95-4762-a9f8-d70a10f360a7",
+    "rules": [
+      {
+        "rule": "position_size",
+        "pass": true,
+        "reason": ""
+      },
+      {
+        "rule": "max_daily_loss",
+        "pass": true,
+        "reason": ""
+      },
+      {
+        "rule": "max_drawdown",
+        "pass": true,
+        "reason": ""
+      },
+      {
+        "rule": "exposure_limit",
+        "pass": true,
+        "reason": ""
+      },
+      {
+        "rule": "leverage_limit",
+        "pass": true,
+        "reason": ""
+      },
+      {
+        "rule": "stop_loss_validation",
+        "pass": true,
+        "reason": ""
+      },
+      {
+        "rule": "take_profit_validation",
+        "pass": true,
+        "reason": ""
+      },
+      {
+        "rule": "correlation_exposure",
+        "pass": true,
+        "reason": ""
+      },
+      {
+        "rule": "portfolio_exposure",
+        "pass": false,
+        "reason": "new total exposure 0.8122 > 0.75"
+      },
+      {
+        "rule": "trading_sessions",
+        "pass": true,
+        "reason": ""
+      },
+      {
+        "rule": "kill_switch",
+        "pass": true,
+        "reason": ""
+      }
+    ],
+    "passed": false,
+    "ts": "2026-09-27T17:46:04.710681+00:00"
+  },
+  "guard_passed": false,
+  "execution": null,
+  "final_state": "IDLE",
+  "reeval_count": 0,
+  "errors": []
+}

@@ -1,0 +1,29 @@
+# Trader runtime configuration
+# Mode: backtest | paper | live (live requires explicit flag + signed waiver — REQ-P-07)
+
+trader:
+  mode: paper
+  veto_window_seconds: 120             # 2-minute veto (chapter 08)
+  on_silence: execute                  # ORIGINAL behavior; alt: wait (P-02)
+  max_reevaluate_cycles: 3             # P-01: cap on RE-EVAL loops
+  memory_manager_interval_seconds: 7200  # 2-hour sleep mode (REQ-MEM-04)
+
+  llm_provider: mock                   # provider-agnostic adapter (OI-08)
+  broker: mock                         # mock | alpaca | binance | ...
+
+  initial_equity: 100000.0
+  risk_fraction_per_trade: 0.005
+  max_trade_exposure: 0.10
+  research_enabled: true
+  search_provider: env:TEXTRADER_SEARCH_URL
+  data_sources:
+    - "mock://ohlcv"
+  instruments:
+    - "XIR/USDT"
+
+  enable_user_veto: true
+  enable_email: false
+  enable_telegram: false
+
+  db_path: data/trader.db
+  log_level: info

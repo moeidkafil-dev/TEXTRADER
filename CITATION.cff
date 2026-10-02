@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+title: "TEXTRADER X"
+message: "If you use this software in research or engineering work, please cite it."
+type: software
+authors:
+  - family-names: "Kafil"
+    given-names: "Moeid"
+version: "4.0.2"
+license: "Proprietary"
+repository-code: "https://github.com/YOUR_USERNAME/TEXTRADER-X"

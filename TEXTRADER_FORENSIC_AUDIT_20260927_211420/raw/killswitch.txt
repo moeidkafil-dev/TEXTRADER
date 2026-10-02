@@ -1,0 +1,20 @@
+after_on_active= True
+Traceback (most recent call last):
+  File "<stdin>", line 9, in <module>
+  File "/home/moeid/Desktop/17/TEXTRADER_X_4_0_0_FIXED/trader/engine/orchestrator.py", line 243, in resume_from_halted
+    repo.set_runtime_control(self.db, "kill_switch_active", "0")
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/moeid/Desktop/17/TEXTRADER_X_4_0_0_FIXED/trader/storage/repo.py", line 241, in set_runtime_control
+    db.execute(
+    ~~~~~~~~~~^
+        "INSERT INTO runtime_controls (key, value, updated_at) VALUES (?, ?, ?) "
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        "ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=excluded.updated_at",
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        (key, value, now_ts()),
+        ^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/moeid/Desktop/17/TEXTRADER_X_4_0_0_FIXED/trader/storage/connection.py", line 34, in execute
+    cur = self._conn.execute(sql, params)
+sqlite3.ProgrammingError: Cannot operate on a closed database.

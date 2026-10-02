@@ -1,0 +1,30 @@
+multiprocessing.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/usr/lib/python3.13/multiprocessing/pool.py", line 125, in worker
+    result = (True, func(*args, **kwds))
+                    ~~~~^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/multiprocessing/pool.py", line 48, in mapstar
+    return list(map(*args))
+  File "<stdin>", line 8, in worker
+  File "/home/moeid/Desktop/17/TEXTRADER_X_4_0_0_FIXED/trader/engine/orchestrator.py", line 120, in __init__
+    self.db = get_db(self._db_path)
+              ~~~~~~^^^^^^^^^^^^^^^
+  File "/home/moeid/Desktop/17/TEXTRADER_X_4_0_0_FIXED/trader/storage/connection.py", line 78, in get_db
+    _default_db = DB(path)
+  File "/home/moeid/Desktop/17/TEXTRADER_X_4_0_0_FIXED/trader/storage/connection.py", line 23, in __init__
+    self._conn.execute("PRAGMA journal_mode = WAL;")
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: database is locked
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "<stdin>", line 15, in <module>
+  File "/usr/lib/python3.13/multiprocessing/pool.py", line 367, in map
+    return self._map_async(func, iterable, mapstar, chunksize).get()
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.13/multiprocessing/pool.py", line 774, in get
+    raise self._value
+sqlite3.OperationalError: database is locked
