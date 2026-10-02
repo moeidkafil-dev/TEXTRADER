@@ -55,3 +55,11 @@ def test_kill_switch_activating_after_guard_blocks_final_execution(tmp_path):
     assert r.execution is not None
     assert r.execution.status == OrderStatus.REJECTED.value
     assert "kill_switch" in r.execution.broker_ack
+
+
+def test_web_dependencies_are_declared_in_pyproject():
+    from pathlib import Path
+    text = Path("pyproject.toml").read_text()
+    assert '"fastapi>=0.115,<1.0"' in text
+    assert '"uvicorn[standard]>=0.30,<1.0"' in text
+    assert '"httpx>=0.27,<1.0"' in text

@@ -1,4 +1,4 @@
-# TEXTRADER X — Release 3.0.0 Validation
+# TEXTRADER X — Release 3.1.1 Validation
 
 Date: 2026-09-26
 

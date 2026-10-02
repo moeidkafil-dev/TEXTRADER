@@ -1,4 +1,4 @@
-# TEXTRADER X 3.1.0 — Control Center Release
+# TEXTRADER X 3.1.1 — Control Center Release
 
 ## What changed
 - FastAPI control plane with OpenAPI docs.

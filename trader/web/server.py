@@ -116,7 +116,7 @@ class ControlPlane:
 
 
 def create_app(default_symbol: str = "BTC/USDT") -> FastAPI:
-    app = FastAPI(title="TEXTRADER X Control Plane", version="3.1.0",
+    app = FastAPI(title="TEXTRADER X Control Plane", version="3.1.1",
                   description="Auditable admin/control plane for autonomous trading analysis.")
     app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
     cp = ControlPlane(default_symbol)

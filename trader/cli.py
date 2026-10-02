@@ -133,7 +133,7 @@ def cmd_ingest(args):
 
 def build_parser():
     p = argparse.ArgumentParser(prog="textrader", description="TEXTRADER X autonomous trading runtime")
-    p.add_argument("--version", action="version", version="textrader 3.1.0")
+    p.add_argument("--version", action="version", version="textrader 3.1.1")
     p.add_argument("--config", help="trader.yaml path")
     p.add_argument("--risk", help="risk.yaml path")
     sp = p.add_subparsers(dest="command", required=True)
