@@ -235,6 +235,21 @@ def latest_portfolio_state(db: DB) -> Optional[dict]:
     return None
 
 
+# ---------------- runtime controls ----------------
+
+def set_runtime_control(db: DB, key: str, value: str) -> None:
+    db.execute(
+        "INSERT INTO runtime_controls (key, value, updated_at) VALUES (?, ?, ?) "
+        "ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=excluded.updated_at",
+        (key, value, now_ts()),
+    )
+
+
+def get_runtime_control(db: DB, key: str, default: Optional[str] = None) -> Optional[str]:
+    row = db.query_one("SELECT value FROM runtime_controls WHERE key=?", (key,))
+    return str(row["value"]) if row else default
+
+
 # ---------------- state_machine_log ----------------
 
 def log_state_transition(db: DB, from_state: str, transition: str, to_state: str,

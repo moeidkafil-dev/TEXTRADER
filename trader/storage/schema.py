@@ -138,6 +138,12 @@ CREATE TABLE IF NOT EXISTS portfolio_state (
     ts             TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS runtime_controls (
+    key            TEXT PRIMARY KEY,
+    value          TEXT NOT NULL,
+    updated_at     TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS state_machine_log (
     id             INTEGER PRIMARY KEY AUTOINCREMENT,
     cycle_id       TEXT,

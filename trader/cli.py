@@ -8,7 +8,7 @@ import sys
 import time
 from pathlib import Path
 
-from trader.core.config import load_risk_config, load_trader_config
+from trader.core.config import load_risk_config, load_trader_config, save_trader_config
 from trader.engine.orchestrator import Orchestrator
 from trader.market.binance import BinanceMarketClient, BinancePublicSource
 
@@ -27,7 +27,7 @@ def _build_orchestrator(args):
     mode = getattr(args, "mode", None)
     if mode:
         tc.mode = mode
-    if args.symbol:
+    if getattr(args, "symbol", None):
         tc.instruments = [_symbol(args)]
     source = None
     data_source = os.getenv("TEXTRADER_MARKET_DATA", "binance" if tc.mode == "live" else "mock").lower()
@@ -107,6 +107,69 @@ def cmd_research(args):
     return 0
 
 
+def cmd_llm_list(args):
+    from trader.adapters.llm import available_providers
+    tc = load_trader_config(Path(args.config) if args.config else None)
+    _pretty({"active": tc.llm_provider, "available": available_providers()})
+    return 0
+
+
+def cmd_llm_set(args):
+    tc = load_trader_config(Path(args.config) if args.config else None)
+    tc.llm_provider = args.provider
+    path = save_trader_config(tc, Path(args.config) if args.config else None)
+    if args.model:
+        env_var = {"ollama": "OLLAMA_MODEL", "openai": "OPENAI_MODEL", "anthropic": "ANTHROPIC_MODEL"}.get(args.provider)
+        hint = f" (also export {env_var}={args.model})" if env_var else ""
+    else:
+        hint = ""
+    _pretty({"llm_provider": tc.llm_provider, "saved_to": str(path), "note": f"restart to take effect{hint}"})
+    return 0
+
+
+def cmd_llm_test(args):
+    from trader.adapters.llm import LLMAdapter
+    tc = load_trader_config(Path(args.config) if args.config else None)
+    provider = args.provider or tc.llm_provider
+    result = LLMAdapter(provider_name=provider).ping()
+    _pretty(result)
+    return 0 if result.get("ok") else 1
+
+
+def cmd_connector_add(args):
+    from trader.adapters.source_connector import SourceConnector, add_connector
+    if args.url and not args.base_url:
+        conn = SourceConnector(name=args.name, mode="url", url=args.url, purpose=args.purpose)
+    else:
+        conn = SourceConnector(name=args.name, mode="api", base_url=args.base_url,
+                                api_key_env=args.api_key_env or "", purpose=args.purpose)
+    add_connector(conn)
+    _pretty({"added": args.name, "mode": conn.mode})
+    return 0
+
+
+def cmd_connector_list(args):
+    from trader.adapters.source_connector import load_connectors
+    conns = load_connectors()
+    _pretty({name: {"mode": c.mode, "purpose": c.purpose, "target": c.base_url or c.url}
+             for name, c in conns.items()})
+    return 0
+
+
+def cmd_connector_test(args):
+    from trader.adapters.source_connector import get_connector
+    result = get_connector(args.name).ping()
+    _pretty(result)
+    return 0 if result.get("ok") else 1
+
+
+def cmd_connector_remove(args):
+    from trader.adapters.source_connector import remove_connector
+    remove_connector(args.name)
+    _pretty({"removed": args.name})
+    return 0
+
+
 def cmd_kill(args):
     o = _build_orchestrator(args)
     if args.action == "on":
@@ -133,7 +196,8 @@ def cmd_ingest(args):
 
 def build_parser():
     p = argparse.ArgumentParser(prog="textrader", description="TEXTRADER X autonomous trading runtime")
-    p.add_argument("--version", action="version", version="textrader 3.1.0")
+    from trader import __version__
+    p.add_argument("--version", action="version", version=f"textrader {__version__}")
     p.add_argument("--config", help="trader.yaml path")
     p.add_argument("--risk", help="risk.yaml path")
     sp = p.add_subparsers(dest="command", required=True)
@@ -167,6 +231,36 @@ def build_parser():
     rs = sp.add_parser("research", help="run auditable knowledge research/search")
     rs.add_argument("query", nargs="?", default="trading risk management")
     rs.set_defaults(func=cmd_research)
+
+    ll = sp.add_parser("llm", help="manage/switch the LLM provider (mock, ollama, openai, anthropic, custom)")
+    llsp = ll.add_subparsers(dest="llm_command", required=True)
+    ll_list = llsp.add_parser("list", help="show active + available providers")
+    ll_list.set_defaults(func=cmd_llm_list)
+    ll_set = llsp.add_parser("set", help="switch provider (persists to trader.yaml)")
+    ll_set.add_argument("provider", choices=["mock", "ollama", "openai", "anthropic"])
+    ll_set.add_argument("--model", help="model name hint (printed, set via provider-specific env var)")
+    ll_set.set_defaults(func=cmd_llm_set)
+    ll_test = llsp.add_parser("test", help="send a 1-token probe through the provider")
+    ll_test.add_argument("--provider", help="override the configured provider for this test")
+    ll_test.set_defaults(func=cmd_llm_test)
+
+    cn = sp.add_parser("connector", help="manage external source connectors (API key or plain URL)")
+    cnsp = cn.add_subparsers(dest="connector_command", required=True)
+    cn_add = cnsp.add_parser("add", help="register a connector: --base-url+--api-key-env (api mode) or --url (url mode)")
+    cn_add.add_argument("name")
+    cn_add.add_argument("--base-url", default="", help="API base URL (api mode)")
+    cn_add.add_argument("--api-key-env", default="", help="env var name holding the API key (api mode)")
+    cn_add.add_argument("--url", default="", help="fixed page/feed URL to research (url mode)")
+    cn_add.add_argument("--purpose", default="research", help="research | market_data | news | broker | custom")
+    cn_add.set_defaults(func=cmd_connector_add)
+    cn_list = cnsp.add_parser("list", help="list registered connectors")
+    cn_list.set_defaults(func=cmd_connector_list)
+    cn_test = cnsp.add_parser("test", help="fetch once and report ok/error")
+    cn_test.add_argument("name")
+    cn_test.set_defaults(func=cmd_connector_test)
+    cn_rm = cnsp.add_parser("remove", help="remove a connector")
+    cn_rm.add_argument("name")
+    cn_rm.set_defaults(func=cmd_connector_remove)
 
     k = sp.add_parser("kill-switch", help="activate/resume the safety halt")
     k.add_argument("action", choices=["on", "off"])

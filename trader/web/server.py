@@ -212,8 +212,39 @@ class ControlPlane:
             return payload
 
 
+class LLMSelectRequest(BaseModel):
+    provider: str
+
+
+class ConnectorIn(BaseModel):
+    name: str
+    mode: str = Field(pattern="^(api|url)$")
+    base_url: str = ""
+    url: str = ""
+    api_key_env: str = ""
+    purpose: str = "research"
+
+
+# --- Pydantic v2 + `from __future__ import annotations` note ---------------
+# With postponed evaluation of annotations active (PEP 563), every field
+# annotation on the models above is stored as a *string* and resolved lazily.
+# FastAPI normally resolves these the first time a route is registered, but
+# when /openapi.json (or TestClient.get("/openapi.json")) is hit before that
+# lazy resolution has happened for every model — which happened here for
+# LLMSelectRequest once ConnectorIn/other request models were added — pydantic
+# raises `PydanticUserError: ... is not fully defined; ... call .rebuild()`.
+# Forcing the rebuild here, right after all request models are defined and
+# before any route is registered, resolves every forward reference eagerly at
+# import time instead of lazily at first-request time, which is what fixes
+# both `test_openapi_exposes_professional_manual_contract` and
+# `test_web_contract_and_manual_analysis`.
+for _request_model in (AnalyzeRequest, ManualDataRequest, LLMSelectRequest, ConnectorIn):
+    _request_model.model_rebuild(force=True)
+
+
 def create_app(default_symbol: str = "BTC/USDT") -> FastAPI:
-    app = FastAPI(title="TEXTRADER X Control Plane", version="3.2.0",
+    from trader import __version__
+    app = FastAPI(title="TEXTRADER X Control Plane", version=__version__,
                   description="Auditable admin/control plane for autonomous trading analysis.")
     app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
     cp = ControlPlane(default_symbol)
@@ -283,6 +314,83 @@ def create_app(default_symbol: str = "BTC/USDT") -> FastAPI:
     @app.get("/api/config")
     def config():
         return {"risk": cp.orch.rc.__dict__, "trader": cp.orch.tc.__dict__}
+
+    # -- LLM provider switching --------------------------------------------
+    @app.get("/api/llm/providers")
+    def llm_providers():
+        from trader.adapters.llm import available_providers
+        return {"active": cp.orch.tc.llm_provider, "available": available_providers()}
+
+    @app.post("/api/llm/select")
+    def llm_select(req: LLMSelectRequest):
+        from trader.adapters.llm import available_providers
+        if req.provider not in available_providers():
+            raise HTTPException(400, f"unknown provider {req.provider!r}")
+        with cp.lock:
+            tc = load_trader_config()
+            tc.mode = cp.orch.tc.mode
+            tc.llm_provider = req.provider
+            from trader.core.config import save_trader_config
+            save_trader_config(tc)
+            cp.orch.tc.llm_provider = req.provider
+        return {"llm_provider": req.provider, "note": "restart the process (or `textrader web` again) to fully re-init agents"}
+
+    @app.post("/api/llm/test")
+    def llm_test(provider: str | None = None):
+        from trader.adapters.llm import LLMAdapter
+        return LLMAdapter(provider_name=provider or cp.orch.tc.llm_provider).ping()
+
+    # -- External source connectors (API key or bare URL) -------------------
+    @app.get("/api/connectors")
+    def connectors_list():
+        from trader.adapters.source_connector import load_connectors
+        from dataclasses import asdict
+        return {name: asdict(c) for name, c in load_connectors().items()}
+
+    @app.post("/api/connectors")
+    def connectors_add(c: ConnectorIn):
+        from trader.adapters.source_connector import SourceConnector, add_connector
+        add_connector(SourceConnector(**c.model_dump()))
+        return {"added": c.name}
+
+    @app.post("/api/connectors/{name}/test")
+    def connectors_test(name: str):
+        from trader.adapters.source_connector import get_connector
+        try:
+            return get_connector(name).ping()
+        except KeyError as exc:
+            raise HTTPException(404, str(exc)) from exc
+
+    @app.delete("/api/connectors/{name}")
+    def connectors_remove(name: str):
+        from trader.adapters.source_connector import remove_connector
+        remove_connector(name)
+        return {"removed": name}
+
+    # -- Module registry: drives the panel's sidebar. Adding a future
+    # capability later means adding one entry here — the UI renders it
+    # automatically, active or reserved, with no template rewrite. -----------
+    @app.get("/api/modules")
+    def modules():
+        return {"modules": [
+            {"id": "overview", "label": "Overview", "status": "active"},
+            {"id": "cycle", "label": "Run Cycle", "status": "active"},
+            {"id": "history", "label": "History", "status": "active"},
+            {"id": "risk", "label": "Risk & Kill-Switch", "status": "active"},
+            {"id": "llm", "label": "LLM Provider", "status": "active"},
+            {"id": "connectors", "label": "Source Connectors", "status": "active"},
+            {"id": "config", "label": "Configuration", "status": "active"},
+            {"id": "backtesting", "label": "Backtesting Lab", "status": "reserved",
+             "note": "CLI backtest exists (`textrader backtest`); a visual results explorer goes here next."},
+            {"id": "multi_account", "label": "Multi-Account / Portfolio", "status": "reserved",
+             "note": "run several instrument/broker configs from one panel."},
+            {"id": "notifications", "label": "Alerts & Notifications", "status": "reserved",
+             "note": "email/Telegram hooks already flagged in trader.yaml (enable_email, enable_telegram) — wiring goes here."},
+            {"id": "plugins", "label": "Plugin Marketplace", "status": "reserved",
+             "note": "install community adapters (brokers, data vendors) without editing source."},
+            {"id": "audit", "label": "Audit & Compliance Export", "status": "reserved",
+             "note": "export the full decision trace (already logged) for external review."},
+        ]}
 
     return app
 

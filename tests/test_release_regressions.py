@@ -55,3 +55,55 @@ def test_kill_switch_activating_after_guard_blocks_final_execution(tmp_path):
     assert r.execution is not None
     assert r.execution.status == OrderStatus.REJECTED.value
     assert "kill_switch" in r.execution.broker_ack
+
+
+def test_orchestrator_serializes_concurrent_cycles(tmp_path):
+    from concurrent.futures import ThreadPoolExecutor
+
+    tc = TraderConfig(mode="paper", db_path=str(tmp_path / "concurrency.db"), enable_user_veto=False)
+    orch = Orchestrator(RiskConfig(), tc, db_path=tc.db_path)
+
+    def run(i):
+        return orch.run_cycle(cycle_id=f"concurrent-{i}")
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        results = list(pool.map(run, range(32)))
+
+    assert len(results) == 32
+    assert all(not r.errors for r in results)
+    assert all(r.final_state == State.IDLE.value for r in results)
+
+
+def test_kill_switch_persists_across_orchestrator_instances(tmp_path):
+    db = str(tmp_path / "persistent-kill.db")
+    tc = TraderConfig(mode="paper", db_path=db)
+
+    first = Orchestrator(RiskConfig(), tc, db_path=db)
+    first.activate_kill_switch("cli-test")
+
+    second = Orchestrator(RiskConfig(), tc, db_path=db)
+    assert second.is_halted()
+    assert second.kill_switch.reason == "cli-test"
+    assert second.run_cycle().errors == ["halted_at_start"]
+
+    second.resume_from_halted("cli-test-resume")
+    third = Orchestrator(RiskConfig(), tc, db_path=db)
+    assert not third.is_halted()
+    assert third.run_cycle().final_state == State.IDLE.value
+
+
+def test_version_is_consistent():
+    import tomllib
+    from trader import __version__
+    from trader.cli import build_parser
+    from trader.web.server import create_app
+
+    with open("pyproject.toml", "rb") as f:
+        project_version = tomllib.load(f)["project"]["version"]
+
+    assert __version__ == project_version == "4.0.0"
+    assert create_app().version == project_version
+    parser = build_parser()
+    version_actions = [a for a in parser._actions if type(a).__name__ == "_VersionAction"]
+    assert version_actions
+    assert "4.0.0" in version_actions[0].version

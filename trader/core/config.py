@@ -131,6 +131,19 @@ def load_risk_config(path: Path | None = None) -> RiskConfig:
     return RiskConfig.from_dict(data.get("risk", data) if data else {})
 
 
+def save_trader_config(config: TraderConfig, path: Path | None = None) -> Path:
+    """Persist the current TraderConfig to trader.yaml so CLI/panel changes
+    (e.g. switching LLM provider) survive restarts."""
+    if yaml is None:
+        raise RuntimeError("PyYAML not installed; install with: pip install pyyaml")
+    p = path or TRADER_CONFIG_PATH
+    p.parent.mkdir(parents=True, exist_ok=True)
+    payload = {"trader": {f: getattr(config, f) for f in config.__dataclass_fields__}}  # type: ignore[attr-defined]
+    with open(p, "w", encoding="utf-8") as f:
+        yaml.safe_dump(payload, f, allow_unicode=True, sort_keys=False)
+    return p
+
+
 def load_trader_config(path: Path | None = None) -> TraderConfig:
     p = path or TRADER_CONFIG_PATH
     if p.is_absolute():

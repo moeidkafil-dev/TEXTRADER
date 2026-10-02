@@ -21,6 +21,7 @@ stateless (modulo memory + DB).
 from __future__ import annotations
 
 import json
+import threading
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Optional
@@ -105,6 +106,11 @@ class Orchestrator:
         self.tc = trader_config
 
         # DB
+        # A single Orchestrator instance is a stateful state-machine owner.
+        # Serialize cycles at this boundary so callers cannot race START_CYCLE
+        # / transition mutations. RLock also permits bounded RE-EVALUATE
+        # recursion inside the same cycle.
+        self._cycle_lock = threading.RLock()
         if db_path:
             self._db_path = db_path
         else:
@@ -127,10 +133,15 @@ class Orchestrator:
         # This guarantees a config-time kill switch enters HALTED immediately.
         self.sm = StateMachine(state=State.IDLE)
 
-        # Kill switch
+        # Kill switch. Persist the safety state in SQLite so CLI invocations
+        # and newly-created web control-plane orchestrators observe the same
+        # active HALT. Configuration-level activation remains fail-closed.
         self.kill_switch = KillSwitch(self.obs, on_change=self._on_kill_switch_change)
-        if self.rc.kill_switch:
-            self.kill_switch.activate("config_kill_switch_true")
+        persisted_ks = repo.get_runtime_control(self.db, "kill_switch_active", "0")
+        persisted_reason = repo.get_runtime_control(self.db, "kill_switch_reason", "persisted") or "persisted"
+        if self.rc.kill_switch or persisted_ks == "1":
+            reason = "config_kill_switch_true" if self.rc.kill_switch else persisted_reason
+            self.kill_switch.activate(reason)
 
         # LLM adapter
         self.llm = LLMAdapter(provider_name=llm_provider_name or self.tc.llm_provider)
@@ -222,11 +233,15 @@ class Orchestrator:
 
     def activate_kill_switch(self, reason: str = "manual") -> None:
         self.kill_switch.activate(reason)
+        repo.set_runtime_control(self.db, "kill_switch_active", "1")
+        repo.set_runtime_control(self.db, "kill_switch_reason", reason)
 
     def resume_from_halted(self, reason: str = "manual_resume") -> None:
-        if self.sm.state != State.HALTED:
+        if self.sm.state != State.HALTED and not self.kill_switch.is_active:
             return
         self.kill_switch.deactivate(reason)
+        repo.set_runtime_control(self.db, "kill_switch_active", "0")
+        repo.set_runtime_control(self.db, "kill_switch_reason", "")
         self.sm.force_idle()
         self._log_transition("HALTED", "RESUME_FROM_HALTED", "IDLE")
 
@@ -243,32 +258,35 @@ class Orchestrator:
                   reeval_count: int = 0,
                   user_veto_hook=None,
                   _start_from_reading: bool = False) -> CycleResult:
-        if self.is_halted():
-            return CycleResult(cycle_id=cycle_id or short_id("cyc_"),
-                                final_state=State.HALTED.value,
-                                errors=["halted_at_start"])
-        cid = cycle_id or short_id("cyc_")
-        result = CycleResult(cycle_id=cid, reeval_count=reeval_count)
-        # Open cycle record
-        started_at = utcnow().isoformat()
-        repo.insert_cycle(self.db, cid, started_at, "running", reeval_count)
-        self._audit(cid, "orchestrator", "cycle_start", {"cycle_id": cid})
+        # Serialize the entire stateful cycle. The engine owns one mutable
+        # StateMachine, so concurrent callers must queue rather than race it.
+        with self._cycle_lock:
+            if self.is_halted():
+                return CycleResult(cycle_id=cycle_id or short_id("cyc_"),
+                                    final_state=State.HALTED.value,
+                                    errors=["halted_at_start"])
+            cid = cycle_id or short_id("cyc_")
+            result = CycleResult(cycle_id=cid, reeval_count=reeval_count)
+            # Open cycle record
+            started_at = utcnow().isoformat()
+            repo.insert_cycle(self.db, cid, started_at, "running", reeval_count)
+            self._audit(cid, "orchestrator", "cycle_start", {"cycle_id": cid})
 
-        try:
-            self._run_cycle_inner(cid, result, user_veto_hook, start_from_reading=_start_from_reading)
-            final_state_label = self.sm.state.value
-            repo.update_cycle_status(self.db, cid, "completed" if final_state_label == "IDLE"
-                                     else final_state_label.lower(),
-                                     ended_at=utcnow().isoformat(),
-                                     reeval_count=result.reeval_count)
-            result.final_state = final_state_label
-        except Exception as e:
-            self.obs.error("orchestrator", trace_id=cid, data={"event": "cycle_exception", "error": str(e)})
-            result.errors.append(str(e))
-            repo.update_cycle_status(self.db, cid, "error", ended_at=utcnow().isoformat())
-            result.final_state = self.sm.state.value
-        self._audit(cid, "orchestrator", "cycle_end", {"cycle_id": cid, "state": result.final_state})
-        return result
+            try:
+                self._run_cycle_inner(cid, result, user_veto_hook, start_from_reading=_start_from_reading)
+                final_state_label = self.sm.state.value
+                repo.update_cycle_status(self.db, cid, "completed" if final_state_label == "IDLE"
+                                         else final_state_label.lower(),
+                                         ended_at=utcnow().isoformat(),
+                                         reeval_count=result.reeval_count)
+                result.final_state = final_state_label
+            except Exception as e:
+                self.obs.error("orchestrator", trace_id=cid, data={"event": "cycle_exception", "error": str(e)})
+                result.errors.append(str(e))
+                repo.update_cycle_status(self.db, cid, "error", ended_at=utcnow().isoformat())
+                result.final_state = self.sm.state.value
+            self._audit(cid, "orchestrator", "cycle_end", {"cycle_id": cid, "state": result.final_state})
+            return result
 
     def _run_cycle_inner(self, cid: str, result: CycleResult, user_veto_hook, *, start_from_reading: bool = False) -> None:
         # ---- IDLE → READING ----
