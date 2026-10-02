@@ -1,0 +1,5 @@
+[console_scripts]
+textrader = trader.cli:main
+trader-backtest = trader.scripts.run_backtest:main
+trader-demo = trader.scripts.run_demo:main
+trader-paper = trader.scripts.run_paper:main
