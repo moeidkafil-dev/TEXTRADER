@@ -101,9 +101,9 @@ def test_version_is_consistent():
     with open("pyproject.toml", "rb") as f:
         project_version = tomllib.load(f)["project"]["version"]
 
-    assert __version__ == project_version == "4.0.0"
+    assert __version__ == project_version == "4.0.1"
     assert create_app().version == project_version
     parser = build_parser()
     version_actions = [a for a in parser._actions if type(a).__name__ == "_VersionAction"]
     assert version_actions
-    assert "4.0.0" in version_actions[0].version
+    assert "4.0.1" in version_actions[0].version

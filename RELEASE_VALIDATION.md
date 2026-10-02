@@ -1,6 +1,10 @@
-# TEXTRADER X — Release 3.0.0 Validation
+# TEXTRADER X — Release Validation Log
 
-Date: 2026-09-26
+This is a running, dated log. Each section is a point-in-time record from
+that release; older sections are kept for history and are **not** updated
+retroactively — read the most recent (bottom) section for current numbers.
+
+## 3.0.0 — 2026-09-26
 
 ## Automated test suite
 
@@ -94,3 +98,55 @@ methodology.
 - Dynamic position sizing smoke test: **PASS**; sample paper cycle produced a portfolio-aware quantity instead of fixed size 1.0.
 - Research command: **PASS**; when no search provider is configured it explicitly reports `searched=false` and returns a source registry rather than fabricating results.
 - Real Binance network call from the builder: **BLOCKED by builder DNS**; the adapter returned a clean error. This does not verify exchange reachability from the user's machine.
+
+## 4.0.1 — 2026-09-27 (this fix)
+
+Measured in a clean venv (`python -m venv` + `pip install -e ".[dev]"`), not
+the host's system Python, so results are TEXTRADER's own dependency graph
+only.
+
+| Check | Result |
+|---|---:|
+| Pytest suite | **90 passed** |
+| Coverage (`pytest --cov=trader`) | **71%** (now actually measured — `pytest-cov` was missing from the audit's environment, not from the project) |
+| `pip check` (clean venv) | **No broken requirements found** |
+| 1,000 sequential cycles, single process | **0 errors**, ~125 cycles/sec |
+| 64 concurrent cycles, one process / 16 threads | **0 errors** |
+| 4 processes × 100 cycles each (multiprocessing) | **0 errors** |
+| 12 processes opening the same fresh DB file simultaneously | **0 errors** (previously: `sqlite3.OperationalError: database is locked`) |
+| 100 concurrent `/api/health` requests | **100/100 OK** |
+| Kill-switch activate in process A, resume in process B (separate OS processes, same DB file) | **PASS** |
+| Kill-switch activate/resume across two Orchestrator instances in one process, older instance resumes after a newer one is built against the same DB path | **PASS** (previously: `sqlite3.ProgrammingError: Cannot operate on a closed database`) |
+
+### Two P1 defects fixed
+
+**1. Kill-switch resume crashed with a closed-database error.**
+`Orchestrator.__init__` unconditionally called `reset_default_db()`, which
+force-closed the process-wide shared SQLite connection every time *any*
+Orchestrator was constructed — including a second one built against the
+*same* database path while an earlier instance was still alive and in use
+(e.g. `ControlPlane._build()` in `trader/web/server.py` rebuilds the
+Orchestrator on every `/api/analyze` call; `resume_from_halted()` calling
+`self.db.execute(...)` on the older, now-closed handle raised
+`sqlite3.ProgrammingError: Cannot operate on a closed database`).
+Fixed in `trader/storage/connection.py` / `trader/engine/orchestrator.py`:
+the shared connection is now only closed when the requested database path
+actually changes; constructing another Orchestrator against the same path
+reuses the same live connection instead of yanking it out from under
+whoever already holds it.
+
+**2. Concurrent process startup could fail with "database is locked".**
+`DB.__init__` set `PRAGMA busy_timeout` *after* `PRAGMA journal_mode = WAL`,
+so the WAL-mode switch itself — which briefly needs an exclusive lock — had
+no busy-wait behavior yet and raised immediately when several OS processes
+raced to initialize the same new database file. Fixed in
+`trader/storage/connection.py`: `busy_timeout` is now set first (so the WAL
+switch itself waits-and-retries on contention), and connection open/PRAGMA
+setup additionally retries with jittered backoff on `OperationalError:
+database is locked` as a second line of defense. Verified with 12 OS
+processes opening the same brand-new DB file at once.
+
+### One correctness cleanup (non-blocking)
+`DB._lock` was a *class* attribute, so every `DB` instance in a process —
+even ones pointing at unrelated database files — serialized through one
+shared lock. Moved to a per-instance lock in `__init__`.

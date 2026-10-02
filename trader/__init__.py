@@ -11,7 +11,7 @@ the TRADER_XIR engineering dossier. See README.md for the full component map and
 the per-module docstrings for the formal contract of each piece.
 """
 
-__version__ = "4.0.0"
+__version__ = "4.0.1"
 __project__ = "TRADER (XIR)"
 __owner__ = "Moeid Kafilonas"
 

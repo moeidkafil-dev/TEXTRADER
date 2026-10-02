@@ -115,8 +115,23 @@ class Orchestrator:
             self._db_path = db_path
         else:
             self._db_path = self.tc.db_path
-        # Always reset to ensure fresh handle for tests
-        reset_default_db()
+        # NOTE: we deliberately do NOT call reset_default_db() here.
+        #
+        # get_db(path) already returns a fresh connection whenever `path`
+        # differs from whatever the process-wide default currently points
+        # at (e.g. a new pytest tmp_path per test), and reuses the *same
+        # still-open* connection when `path` matches. Unconditionally
+        # force-closing the previous default on every Orchestrator
+        # construction — as this used to do — broke any other live object
+        # still holding that old connection the moment a second
+        # Orchestrator was built against the same db_path (e.g.
+        # ControlPlane._build() runs on every /api/analyze call in
+        # trader/web/server.py, and test_kill_switch_persists_across_
+        # orchestrator_instances constructs three Orchestrators against one
+        # file). That earlier instance's self.db then pointed at a closed
+        # sqlite3.Connection, so any later call on it — such as
+        # resume_from_halted() — raised
+        # "sqlite3.ProgrammingError: Cannot operate on a closed database."
         self.db = get_db(self._db_path)
         init_schema(self.db)
 
