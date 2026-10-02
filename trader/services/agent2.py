@@ -123,9 +123,15 @@ class Agent2(AgentBase):
                        "severity": "blocking" if missing_data else "low"})
         # F4 invalid_assumption — check instrument exists in context
         if initial and md and not md.empty:
-            symbols = {b["payload"]["instrument"]
-                       for b in md.data.get("bundles", [])
-                       if b.get("source", "").endswith("ohlcv")}
+            symbols = {
+                b.get("payload", {}).get("instrument")
+                for b in md.data.get("bundles", [])
+                if (
+                    isinstance(b.get("payload"), dict)
+                    and "ohlcv" in b.get("payload", {})
+                    and b.get("payload", {}).get("instrument")
+                )
+            }
             if initial.instrument not in symbols:
                 paths.append({"category": "invalid_assumption",
                                "description": f"instrument {initial.instrument} not in market data: {symbols}",
@@ -184,21 +190,27 @@ class Agent2(AgentBase):
         if md and not md.empty:
             book_b = next((b for b in md.data.get("bundles", [])
                            if b.get("source", "").endswith("orderbook")), None)
-            if book_b:
-                bids = book_b["payload"]["order_book"]["bids"]
-                asks = book_b["payload"]["order_book"]["asks"]
-                if not bids or not asks:
-                    paths.append({"category": "execution_impossibility",
-                                   "description": "empty order book one side",
-                                   "severity": "blocking"})
+            if book_b and book_b.get("quality") == "ok" and isinstance(book_b.get("payload"), dict):
+                order_book = book_b["payload"].get("order_book")
+                if isinstance(order_book, dict):
+                    bids = order_book.get("bids", []) or []
+                    asks = order_book.get("asks", []) or []
+                    if not bids or not asks:
+                        paths.append({"category": "execution_impossibility",
+                                       "description": "empty order book one side",
+                                       "severity": "blocking"})
+                    else:
+                        paths.append({"category": "execution_impossibility",
+                                       "description": "order book has liquidity both sides; no execution impossibility detected",
+                                       "severity": "low"})
                 else:
                     paths.append({"category": "execution_impossibility",
-                                   "description": "order book has liquidity both sides",
-                                   "severity": "low"})
+                                   "description": "order book payload missing; cannot assess liquidity",
+                                   "severity": "blocking"})
             else:
                 paths.append({"category": "execution_impossibility",
-                               "description": "no order book data; cannot assess liquidity",
-                               "severity": "med"})
+                               "description": "no valid order book data; cannot assess liquidity",
+                               "severity": "blocking" if book_b else "med"})
         else:
             paths.append({"category": "execution_impossibility",
                            "description": "no market data at all",

@@ -261,6 +261,11 @@ def create_app(default_symbol: str = "BTC/USDT") -> FastAPI:
 
     @app.get("/api/market")
     def market(symbol: str = "BTC/USDT", interval: str = "1m", limit: int = 100):
+        import re
+
+        symbol = symbol.strip().upper().replace("-", "/")
+        if not re.fullmatch(r"[A-Z0-9]{2,20}/[A-Z0-9]{2,20}", symbol):
+            raise HTTPException(400, "symbol must match BASE/QUOTE format")
         if limit < 10 or limit > 1000:
             raise HTTPException(400, "limit must be 10..1000")
         try:

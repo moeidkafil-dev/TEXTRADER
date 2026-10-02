@@ -1,0 +1,7 @@
+PositionSizer: <trader.position_sizer.PositionSizer object at 0x7fbc01f2e510>
+BAD_INPUT 0 -> SizingResult(quantity=0.0, notional=0.0, risk_amount=0.0, risk_fraction=0.005, stop_distance=0.0, reason='invalid equity')
+BAD_INPUT -1 -> SizingResult(quantity=0.0, notional=0.0, risk_amount=0.0, risk_fraction=0.005, stop_distance=0.0, reason='invalid equity')
+BAD_INPUT nan -> SizingResult(quantity=0.0, notional=0.0, risk_amount=0.0, risk_fraction=0.005, stop_distance=0.0, reason='invalid equity')
+BAD_INPUT inf -> SizingResult(quantity=0.0, notional=0.0, risk_amount=0.0, risk_fraction=0.005, stop_distance=0.0, reason='invalid equity')
+BAD_INPUT -inf -> SizingResult(quantity=0.0, notional=0.0, risk_amount=0.0, risk_fraction=0.005, stop_distance=0.0, reason='invalid equity')
+POSITION_SIZING_BOUNDARY_TEST_FINISHED

@@ -92,6 +92,37 @@ def test_kill_switch_persists_across_orchestrator_instances(tmp_path):
     assert third.run_cycle().final_state == State.IDLE.value
 
 
+
+def test_kill_switch_state_reconciles_between_live_orchestrators(tmp_path):
+    db = str(tmp_path / "multi-instance-kill.db")
+    tc = TraderConfig(mode="paper", db_path=db, enable_user_veto=False)
+
+    first = Orchestrator(RiskConfig(), tc, db_path=db)
+    second = Orchestrator(RiskConfig(), tc, db_path=db)
+
+    first.activate_kill_switch("remote-stop")
+    assert second.is_halted()
+    assert second.kill_switch.reason == "remote-stop"
+    assert second.run_cycle().errors == ["halted_at_start"]
+
+    first.resume_from_halted("remote-resume")
+    assert not second.is_halted()
+    result = second.run_cycle()
+    assert result.final_state == State.IDLE.value
+    assert not result.errors
+
+
+def test_kill_switch_activation_by_second_instance_blocks_first(tmp_path):
+    db = str(tmp_path / "reverse-multi-instance-kill.db")
+    tc = TraderConfig(mode="paper", db_path=db, enable_user_veto=False)
+
+    first = Orchestrator(RiskConfig(), tc, db_path=db)
+    second = Orchestrator(RiskConfig(), tc, db_path=db)
+
+    second.activate_kill_switch("remote-stop")
+    assert first.is_halted()
+    assert first.run_cycle().errors == ["halted_at_start"]
+
 def test_version_is_consistent():
     import tomllib
     from trader import __version__
@@ -101,9 +132,9 @@ def test_version_is_consistent():
     with open("pyproject.toml", "rb") as f:
         project_version = tomllib.load(f)["project"]["version"]
 
-    assert __version__ == project_version == "4.0.1"
+    assert __version__ == project_version == "4.0.2"
     assert create_app().version == project_version
     parser = build_parser()
     version_actions = [a for a in parser._actions if type(a).__name__ == "_VersionAction"]
     assert version_actions
-    assert "4.0.1" in version_actions[0].version
+    assert "4.0.2" in version_actions[0].version

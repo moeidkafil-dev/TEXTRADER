@@ -11,6 +11,7 @@ from pathlib import Path
 from trader.core.config import load_risk_config, load_trader_config, save_trader_config
 from trader.engine.orchestrator import Orchestrator
 from trader.market.binance import BinanceMarketClient, BinancePublicSource
+from trader.market.bitget import BitgetMarketClient, BitgetPublicSource
 
 
 def _pretty(obj):
@@ -27,12 +28,18 @@ def _build_orchestrator(args):
     mode = getattr(args, "mode", None)
     if mode:
         tc.mode = mode
+    # Decision-only mode is fail-closed: the normal silence path becomes WAIT,
+    # so no broker submission/fill can occur even when the model says BUY/SELL.
+    if os.getenv("TEXTRADER_DECISION_ONLY", "0").lower() in {"1", "true", "yes", "on"}:
+        tc.on_silence = "wait"
     if getattr(args, "symbol", None):
         tc.instruments = [_symbol(args)]
     source = None
     data_source = os.getenv("TEXTRADER_MARKET_DATA", "binance" if tc.mode == "live" else "mock").lower()
     if data_source == "binance":
         source = BinancePublicSource(tc.instruments, interval=os.getenv("TEXTRADER_INTERVAL", "1m"))
+    elif data_source == "bitget":
+        source = BitgetPublicSource(tc.instruments, interval=os.getenv("TEXTRADER_INTERVAL", "1m"))
     return Orchestrator(rc, tc, data_source=source)
 
 
@@ -45,6 +52,7 @@ def cmd_doctor(args):
         checks["config"] = "ok"
         checks["mode"] = tc.mode
         checks["market_data"] = os.getenv("TEXTRADER_MARKET_DATA", "mock")
+        checks["decision_only"] = os.getenv("TEXTRADER_DECISION_ONLY", "0").lower() in {"1", "true", "yes", "on"}
         checks["db"] = tc.db_path
     except Exception as e:
         checks["config"] = f"ERROR: {e}"
@@ -53,7 +61,7 @@ def cmd_doctor(args):
 
 
 def cmd_market(args):
-    c = BinanceMarketClient()
+    c = BitgetMarketClient() if args.source == "bitget" else BinanceMarketClient()
     try:
         snap = c.snapshot(_symbol(args), args.interval, args.limit)
     except Exception as e:
@@ -68,7 +76,12 @@ def cmd_market(args):
 
 
 def cmd_analyze(args):
+    if args.source == "bitget" and args.mode == "live":
+        print("ERROR: Bitget release source is read-only; use --mode paper or --decision-only.", file=sys.stderr)
+        return 2
     os.environ["TEXTRADER_MARKET_DATA"] = args.source
+    if args.source == "bitget" or getattr(args, "decision_only", False):
+        os.environ["TEXTRADER_DECISION_ONLY"] = "1"
     o = _build_orchestrator(args)
     r = o.run_cycle()
     _pretty(r.to_dict())
@@ -77,6 +90,8 @@ def cmd_analyze(args):
 
 def cmd_paper(args):
     os.environ["TEXTRADER_MARKET_DATA"] = args.source
+    if args.source == "bitget" or getattr(args, "decision_only", False):
+        os.environ["TEXTRADER_DECISION_ONLY"] = "1"
     o = _build_orchestrator(args)
     for i in range(args.cycles):
         r = o.run_cycle()
@@ -172,6 +187,9 @@ def cmd_connector_remove(args):
 
 def cmd_kill(args):
     o = _build_orchestrator(args)
+    if args.action == "status":
+        _pretty({"kill_switch": o.kill_switch.to_dict(), "state": o.state})
+        return 0
     if args.action == "on":
         o.activate_kill_switch(args.reason)
     else:
@@ -209,19 +227,22 @@ def build_parser():
     m.add_argument("symbol")
     m.add_argument("--interval", default="1m")
     m.add_argument("--limit", type=int, default=100)
+    m.add_argument("--source", choices=["binance", "bitget"], default="bitget", help="public market-data provider")
     m.set_defaults(func=cmd_market)
 
     a = sp.add_parser("analyze", help="run one XIR decision cycle")
     a.add_argument("symbol", nargs="?", default="BTC/USDT")
-    a.add_argument("--source", choices=["mock", "binance"], default="binance")
+    a.add_argument("--source", choices=["mock", "binance", "bitget"], default="binance")
     a.add_argument("--mode", choices=["paper", "backtest", "live"])
+    a.add_argument("--decision-only", action="store_true", help="analysis only: BUY/SELL is reported but never submitted")
     a.set_defaults(func=cmd_analyze)
 
     pp = sp.add_parser("paper", help="run paper cycles")
     pp.add_argument("symbol", nargs="?", default="BTC/USDT")
     pp.add_argument("--cycles", type=int, default=20)
     pp.add_argument("--interval", type=float, default=0.0)
-    pp.add_argument("--source", choices=["mock", "binance"], default="binance")
+    pp.add_argument("--source", choices=["mock", "binance", "bitget"], default="binance")
+    pp.add_argument("--decision-only", action="store_true", help="analysis only: BUY/SELL is reported but never submitted")
     pp.set_defaults(func=cmd_paper)
 
     b = sp.add_parser("backtest", help="run deterministic historical replay")
@@ -263,7 +284,7 @@ def build_parser():
     cn_rm.set_defaults(func=cmd_connector_remove)
 
     k = sp.add_parser("kill-switch", help="activate/resume the safety halt")
-    k.add_argument("action", choices=["on", "off"])
+    k.add_argument("action", choices=["status", "on", "off"])
     k.add_argument("--reason", default="manual")
     k.set_defaults(func=cmd_kill)
 

@@ -1,0 +1,1 @@
+trader/adapters/broker/ccxt.py:41:            result = self.exchange.create_order(symbol, "market", side, order.size)

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import ssl
 import urllib.parse
 import urllib.request
@@ -14,8 +15,10 @@ from trader.services.data_reader import DataSource
 
 
 class BinanceMarketClient:
-    def __init__(self, base_url: str = "https://api.binance.com", timeout: float = 10.0):
-        self.base_url = base_url.rstrip("/")
+    def __init__(self, base_url: str | None = None, timeout: float = 10.0):
+        # Explicit constructor value wins; otherwise allow deployments/tests to
+        # select a compatible public Binance endpoint without changing code.
+        self.base_url = (base_url or os.getenv("BINANCE_BASE_URL") or "https://api.binance.com").rstrip("/")
         self.timeout = timeout
 
     def _get(self, path: str, params: dict[str, Any]) -> Any:
@@ -51,6 +54,8 @@ class BinanceMarketClient:
         now_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
         klines = [k for k in raw_klines if len(k) >= 7 and int(k[6]) < now_ms]
         klines = klines[-limit:]
+        if not klines:
+            raise ValueError(f"no closed klines returned for {symbol}")
         return {"ticker": ticker, "depth": depth, "klines": klines}
 
 
@@ -63,44 +68,59 @@ class BinancePublicSource(DataSource):
         self.limit = limit
         self.client = client or BinanceMarketClient()
 
+    @staticmethod
+    def _missing_bundles(instrument: str, timestamp: datetime, error: Exception) -> list[DataBundle]:
+        message = f"{type(error).__name__}: {error}"
+        payload = {"instrument": instrument, "error": message}
+        return [
+            DataBundle("binance://rest/market", timestamp, "missing", payload, hash="missing"),
+            DataBundle("binance://rest/orderbook", timestamp, "missing", payload, hash="missing"),
+        ]
+
     def fetch(self, cycle_id: str) -> list[DataBundle]:
         ts = datetime.now(timezone.utc)
         bundles: list[DataBundle] = []
         for inst in self.instruments:
-            snap = self.client.snapshot(inst, self.interval, self.limit)
-            ticker = snap["ticker"]
-            klines = snap["klines"]
-            last = float(ticker["lastPrice"])
-            payload = {
-                "instrument": inst,
-                "ohlcv": {
-                    "open": float(klines[-1][1]),
-                    "high": float(klines[-1][2]),
-                    "low": float(klines[-1][3]),
-                    "close": float(klines[-1][4]),
-                    "volume": float(klines[-1][5]),
-                },
-                "market": {
-                    "last": last,
-                    "bid": float(ticker["bidPrice"]),
-                    "ask": float(ticker["askPrice"]),
-                    "change_pct": float(ticker["priceChangePercent"]),
-                    "volume_24h": float(ticker["volume"]),
-                },
-                "history": [
-                    {"ts": int(k[0]), "open": float(k[1]), "high": float(k[2]),
-                     "low": float(k[3]), "close": float(k[4]), "volume": float(k[5])}
-                    for k in klines
-                ],
-            }
-            bundles.append(DataBundle("binance://rest/market", ts, "ok", payload, hash=sha256_of(payload)))
-            book_payload = {
-                "instrument": inst,
-                "order_book": {
-                    "bids": [[float(p), float(q)] for p, q in snap["depth"]["bids"]],
-                    "asks": [[float(p), float(q)] for p, q in snap["depth"]["asks"]],
-                },
-            }
-            bundles.append(DataBundle("binance://rest/orderbook", ts, "ok", book_payload,
-                                      hash=sha256_of(book_payload)))
+            try:
+                snap = self.client.snapshot(inst, self.interval, self.limit)
+                ticker = snap["ticker"]
+                klines = snap["klines"]
+                last = float(ticker["lastPrice"])
+                payload = {
+                    "instrument": inst,
+                    "ohlcv": {
+                        "open": float(klines[-1][1]),
+                        "high": float(klines[-1][2]),
+                        "low": float(klines[-1][3]),
+                        "close": float(klines[-1][4]),
+                        "volume": float(klines[-1][5]),
+                    },
+                    "market": {
+                        "last": last,
+                        "bid": float(ticker["bidPrice"]),
+                        "ask": float(ticker["askPrice"]),
+                        "change_pct": float(ticker["priceChangePercent"]),
+                        "volume_24h": float(ticker["volume"]),
+                    },
+                    "history": [
+                        {"ts": int(k[0]), "open": float(k[1]), "high": float(k[2]),
+                         "low": float(k[3]), "close": float(k[4]), "volume": float(k[5])}
+                        for k in klines
+                    ],
+                }
+                bundles.append(DataBundle("binance://rest/market", ts, "ok", payload, hash=sha256_of(payload)))
+                book_payload = {
+                    "instrument": inst,
+                    "order_book": {
+                        "bids": [[float(p), float(q)] for p, q in snap["depth"]["bids"]],
+                        "asks": [[float(p), float(q)] for p, q in snap["depth"]["asks"]],
+                    },
+                }
+                bundles.append(DataBundle("binance://rest/orderbook", ts, "ok", book_payload,
+                                          hash=sha256_of(book_payload)))
+            except Exception as exc:
+                # Public data failures are data-quality failures, not fabricated
+                # market values. Preserve the instrument and source so Context
+                # Maker can fail closed while other instruments can still proceed.
+                bundles.extend(self._missing_bundles(inst, ts, exc))
         return bundles

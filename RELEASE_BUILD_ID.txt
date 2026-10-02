@@ -1,0 +1,4 @@
+TEXTRADER X 4.0.2 — FINAL READY FOR RELEASE
+Build: 2026-09-30
+Safety mode: Bitget public market data is read-only; broker submission disabled for Bitget release source.
+Validation: 116 pytest tests passed; Python compileall passed; CLI version 4.0.2.

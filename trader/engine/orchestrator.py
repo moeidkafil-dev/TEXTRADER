@@ -152,11 +152,13 @@ class Orchestrator:
         # and newly-created web control-plane orchestrators observe the same
         # active HALT. Configuration-level activation remains fail-closed.
         self.kill_switch = KillSwitch(self.obs, on_change=self._on_kill_switch_change)
+        self._runtime_kill_switch_active = False
         persisted_ks = repo.get_runtime_control(self.db, "kill_switch_active", "0")
         persisted_reason = repo.get_runtime_control(self.db, "kill_switch_reason", "persisted") or "persisted"
         if self.rc.kill_switch or persisted_ks == "1":
             reason = "config_kill_switch_true" if self.rc.kill_switch else persisted_reason
             self.kill_switch.activate(reason)
+            self._runtime_kill_switch_active = (not self.rc.kill_switch and persisted_ks == "1")
 
         # LLM adapter
         self.llm = LLMAdapter(provider_name=llm_provider_name or self.tc.llm_provider)
@@ -246,15 +248,41 @@ class Orchestrator:
 
     # -------- public API --------
 
+    def _sync_runtime_kill_switch(self) -> None:
+        """Reconcile this instance with the persistent runtime kill switch.
+
+        The SQLite runtime control is the source of truth across live
+        Orchestrator instances. This deliberately leaves configuration-level
+        kill switches untouched: those remain fail-closed until configuration
+        changes.
+        """
+        if self.rc.kill_switch:
+            return
+        active = repo.get_runtime_control(self.db, "kill_switch_active", "0") == "1"
+        reason = repo.get_runtime_control(self.db, "kill_switch_reason", "persisted") or "persisted"
+        if active and not self._runtime_kill_switch_active:
+            self._runtime_kill_switch_active = True
+            self.kill_switch.activate(reason)
+        elif not active and self._runtime_kill_switch_active:
+            self._runtime_kill_switch_active = False
+            self.kill_switch.deactivate("runtime_sync")
+            if self.sm.state == State.HALTED:
+                self.sm.force_idle()
+
     def activate_kill_switch(self, reason: str = "manual") -> None:
-        self.kill_switch.activate(reason)
         repo.set_runtime_control(self.db, "kill_switch_active", "1")
         repo.set_runtime_control(self.db, "kill_switch_reason", reason)
+        self._runtime_kill_switch_active = True
+        self.kill_switch.activate(reason)
 
     def resume_from_halted(self, reason: str = "manual_resume") -> None:
+        self._sync_runtime_kill_switch()
         if self.sm.state != State.HALTED and not self.kill_switch.is_active:
             return
+        if self.rc.kill_switch:
+            return
         self.kill_switch.deactivate(reason)
+        self._runtime_kill_switch_active = False
         repo.set_runtime_control(self.db, "kill_switch_active", "0")
         repo.set_runtime_control(self.db, "kill_switch_reason", "")
         self.sm.force_idle()
@@ -265,6 +293,7 @@ class Orchestrator:
         return self.sm.state.value
 
     def is_halted(self) -> bool:
+        self._sync_runtime_kill_switch()
         return self.sm.state == State.HALTED or self.kill_switch.is_active
 
     # -------- single cycle --------
@@ -517,6 +546,13 @@ class Orchestrator:
         self._log_transition("RISK_CHECK", "RISK_PASS", "GUARD", cid)
 
         # ---- GUARD ----
+        self._sync_runtime_kill_switch()
+        if self.is_halted():
+            repo.update_order_status(self.db, order.order_id, OrderStatus.REJECTED.value)
+            self.sm.force_halted()
+            result.errors.append("halted_before_guard")
+            result.final_state = State.HALTED.value
+            return
         allowed, why = self.guard.allow(order, risk, veto)
         result.guard_passed = allowed
         if not allowed:
@@ -535,7 +571,34 @@ class Orchestrator:
         self._log_transition("GUARD", "GUARD_PASS", "EXECUTING", cid)
 
         # ---- EXECUTING ----
-        if order.side == Side.BUY.value:
+        # Reconcile once more immediately before the final execution call so a
+        # kill switch raised by another live instance cannot remain stale in
+        # this process. FinalTools also performs its local fail-closed check.
+        self._sync_runtime_kill_switch()
+        if self.is_halted():
+            repo.update_order_status(self.db, order.order_id, OrderStatus.REJECTED.value)
+            self.sm.force_halted()
+            result.execution = ExecutionResult(
+                order_id=order.order_id,
+                status=OrderStatus.REJECTED.value,
+                broker_ack="kill_switch active (HALTED)",
+            )
+            result.errors.append("halted_before_execution")
+            self._audit(cid, "final_tools", "blocked", result.execution.to_dict())
+            result.final_state = State.HALTED.value
+            return
+        # Hard execution interlock: decision-only mode must never call any
+        # broker adapter, even if the model, risk engine, and guard approve.
+        # This is deliberately enforced at the last execution boundary.
+        import os
+        if os.getenv("TEXTRADER_DECISION_ONLY", "0").lower() in {"1", "true", "yes", "on"}:
+            exec_result = ExecutionResult(
+                order_id=order.order_id,
+                status=OrderStatus.REJECTED.value,
+                broker_ack="decision-only mode: broker submission disabled",
+            )
+            self._audit(cid, "final_tools", "blocked_decision_only", exec_result.to_dict())
+        elif order.side == Side.BUY.value:
             exec_result = self.final_tools.buy_system(order)
         else:
             exec_result = self.final_tools.sell_system(order)

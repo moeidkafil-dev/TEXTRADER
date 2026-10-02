@@ -1,0 +1,14 @@
+RiskEngine: <class 'trader.services.risk_engine.RiskEngine'>
+CASE: {'equity': 0}
+EXCEPTION: TypeError RiskEngine.__init__() missing 1 required positional argument: 'config'
+CASE: {'equity': -100}
+EXCEPTION: TypeError RiskEngine.__init__() missing 1 required positional argument: 'config'
+CASE: {'price': 0}
+EXCEPTION: TypeError RiskEngine.__init__() missing 1 required positional argument: 'config'
+CASE: {'price': -1}
+EXCEPTION: TypeError RiskEngine.__init__() missing 1 required positional argument: 'config'
+CASE: {'equity': nan}
+EXCEPTION: TypeError RiskEngine.__init__() missing 1 required positional argument: 'config'
+CASE: {'equity': inf}
+EXCEPTION: TypeError RiskEngine.__init__() missing 1 required positional argument: 'config'
+RISK_BOUNDARY_TEST_FINISHED

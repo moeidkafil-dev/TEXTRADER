@@ -83,7 +83,8 @@ class Agent1(AgentBase):
         if md and not md.empty:
             bundles = md.data.get("bundles", [])
             ohlcv_b = next((b for b in bundles
-                            if b.get("source", "").endswith("ohlcv")), None)
+                            if b.get("source", "").endswith("ohlcv")
+                            or isinstance(b.get("payload"), dict) and "ohlcv" in b.get("payload", {})), None)
             news_b = next((b for b in bundles
                            if b.get("source", "").endswith("news")), None)
             if ohlcv_b:

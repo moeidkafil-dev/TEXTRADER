@@ -1,0 +1,11 @@
+trader/cli.py:31:    # Decision-only mode is fail-closed: the normal silence path becomes WAIT,
+trader/cli.py:33:    if os.getenv("TEXTRADER_DECISION_ONLY", "0").lower() in {"1", "true", "yes", "on"}:
+trader/cli.py:55:        checks["decision_only"] = os.getenv("TEXTRADER_DECISION_ONLY", "0").lower() in {"1", "true", "yes", "on"}
+trader/cli.py:80:        print("ERROR: Bitget release source is read-only; use --mode paper or --decision-only.", file=sys.stderr)
+trader/cli.py:84:        os.environ["TEXTRADER_DECISION_ONLY"] = "1"
+trader/cli.py:94:        os.environ["TEXTRADER_DECISION_ONLY"] = "1"
+trader/cli.py:234:    a.add_argument("--decision-only", action="store_true", help="analysis only: BUY/SELL is reported but never submitted")
+trader/cli.py:242:    pp.add_argument("--decision-only", action="store_true", help="analysis only: BUY/SELL is reported but never submitted")
+trader/engine/orchestrator.py:590:        # Hard execution interlock: decision-only mode must never call any
+trader/engine/orchestrator.py:594:        if os.getenv("TEXTRADER_DECISION_ONLY", "0").lower() in {"1", "true", "yes", "on"}:
+trader/engine/orchestrator.py:598:                broker_ack="decision-only mode: broker submission disabled",

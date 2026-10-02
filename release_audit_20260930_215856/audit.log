@@ -1,0 +1,542 @@
+============================================================
+TEXTRADER X 4.0.2 — FULL RELEASE AUDIT
+============================================================
+Project : /home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE
+Started : 2026-09-30 21:58:56
+Report  : /home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/release_audit_20260930_215856
+
+### ENVIRONMENT ###
+Python 3.13.12
+Linux kali 6.16.8+kali-amd64 #1 SMP PREEMPT_DYNAMIC Kali 6.16.8-1kali1 (2025-09-24) x86_64 GNU/Linux
+[PASS] curl available
+[PASS] unzip available
+
+### VIRTUAL ENVIRONMENT ###
+[PASS] .venv already exists
+
+============================================================
+CHECK: Python executable
+============================================================
+Python 3.13.12
+[PASS] Python executable
+
+============================================================
+CHECK: pip available
+============================================================
+pip 26.2.1 from /home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/.venv/lib/python3.13/site-packages/pip (python 3.13)
+[PASS] pip available
+
+============================================================
+CHECK: pip upgrade
+============================================================
+WARNING: Ignoring invalid distribution ~ip (/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/.venv/lib/python3.13/site-packages)
+WARNING: Ignoring invalid distribution ~ip (/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/.venv/lib/python3.13/site-packages)
+Requirement already satisfied: pip in ./.venv/lib/python3.13/site-packages (26.2.1)
+Requirement already satisfied: setuptools in ./.venv/lib/python3.13/site-packages (84.0.0)
+Collecting wheel
+  Using cached wheel-0.48.0-py3-none-any.whl.metadata (2.3 kB)
+Collecting packaging>=24.0 (from wheel)
+  Using cached packaging-26.3-py3-none-any.whl.metadata (3.5 kB)
+Using cached wheel-0.48.0-py3-none-any.whl (33 kB)
+Using cached packaging-26.3-py3-none-any.whl (129 kB)
+WARNING: Ignoring invalid distribution ~ip (/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/.venv/lib/python3.13/site-packages)
+Installing collected packages: packaging, wheel
+
+WARNING: Ignoring invalid distribution ~ip (/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/.venv/lib/python3.13/site-packages)
+Successfully installed packaging-26.3 wheel-0.48.0
+[PASS] pip upgrade
+
+### INSTALLATION ###
+
+============================================================
+CHECK: editable project installation
+============================================================
+WARNING: Ignoring invalid distribution ~ip (/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/.venv/lib/python3.13/site-packages)
+WARNING: Ignoring invalid distribution ~ip (/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/.venv/lib/python3.13/site-packages)
+Obtaining file:///home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+  WARNING: Ignoring invalid distribution ~ip (/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/.venv/lib/python3.13/site-packages)
+Collecting pyyaml>=6.0 (from textrader==4.0.2)
+  Using cached pyyaml-6.0.3-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.4 kB)
+Collecting fastapi>=0.115 (from textrader==4.0.2)
+  WARNING: Retrying (Retry(total=4, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NameResolutionError("HTTPSConnection(host='files.pythonhosted.org', port=443): Failed to resolve 'files.pythonhosted.org' ([Errno -3] Temporary failure in name resolution)")': /packages/a0/b6/78aaf9141fb46742928c113f3cf6ef2259d538cb02b604b7656c1dc9883c/fastapi-0.142.2-py3-none-any.whl.metadata
+  WARNING: Retrying (Retry(total=3, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NameResolutionError("HTTPSConnection(host='files.pythonhosted.org', port=443): Failed to resolve 'files.pythonhosted.org' ([Errno -3] Temporary failure in name resolution)")': /packages/a0/b6/78aaf9141fb46742928c113f3cf6ef2259d538cb02b604b7656c1dc9883c/fastapi-0.142.2-py3-none-any.whl.metadata
+  WARNING: Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NameResolutionError("HTTPSConnection(host='files.pythonhosted.org', port=443): Failed to resolve 'files.pythonhosted.org' ([Errno -3] Temporary failure in name resolution)")': /packages/a0/b6/78aaf9141fb46742928c113f3cf6ef2259d538cb02b604b7656c1dc9883c/fastapi-0.142.2-py3-none-any.whl.metadata
+  WARNING: Retrying (Retry(total=1, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NameResolutionError("HTTPSConnection(host='files.pythonhosted.org', port=443): Failed to resolve 'files.pythonhosted.org' ([Errno -3] Temporary failure in name resolution)")': /packages/a0/b6/78aaf9141fb46742928c113f3cf6ef2259d538cb02b604b7656c1dc9883c/fastapi-0.142.2-py3-none-any.whl.metadata
+  WARNING: Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NameResolutionError("HTTPSConnection(host='files.pythonhosted.org', port=443): Failed to resolve 'files.pythonhosted.org' ([Errno -3] Temporary failure in name resolution)")': /packages/a0/b6/78aaf9141fb46742928c113f3cf6ef2259d538cb02b604b7656c1dc9883c/fastapi-0.142.2-py3-none-any.whl.metadata
+error: connection-failed
+
+× Failed to connect to files.pythonhosted.org while fetching https://files.pythonhosted.org/packages/a0/b6/78aaf9141fb46742928c113f3cf6ef2259d538cb02b604b7656c1dc9883c/fastapi-0.142.2-py3-none-any.whl.metadata
+╰─> Failed to resolve IP address for 'files.pythonhosted.org' ([Errno -3] Temporary failure in name resolution)
+
+hint: Are you connected to the Internet? If so, check whether your system can connect to files.pythonhosted.org before trying again. There may be a firewall or proxy that's preventing the connection.
+[FAIL] editable project installation
+
+============================================================
+CHECK: requirements installation
+============================================================
+WARNING: Ignoring invalid distribution ~ip (/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/.venv/lib/python3.13/site-packages)
+WARNING: Ignoring invalid distribution ~ip (/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/.venv/lib/python3.13/site-packages)
+Obtaining file:///home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+  WARNING: Ignoring invalid distribution ~ip (/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/.venv/lib/python3.13/site-packages)
+Collecting pyyaml>=6.0 (from textrader==4.0.2)
+  Using cached pyyaml-6.0.3-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.4 kB)
+Collecting fastapi>=0.115 (from textrader==4.0.2)
+  WARNING: Retrying (Retry(total=4, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NameResolutionError("HTTPSConnection(host='files.pythonhosted.org', port=443): Failed to resolve 'files.pythonhosted.org' ([Errno -3] Temporary failure in name resolution)")': /packages/a0/b6/78aaf9141fb46742928c113f3cf6ef2259d538cb02b604b7656c1dc9883c/fastapi-0.142.2-py3-none-any.whl.metadata
+  WARNING: Retrying (Retry(total=3, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NameResolutionError("HTTPSConnection(host='files.pythonhosted.org', port=443): Failed to resolve 'files.pythonhosted.org' ([Errno -3] Temporary failure in name resolution)")': /packages/a0/b6/78aaf9141fb46742928c113f3cf6ef2259d538cb02b604b7656c1dc9883c/fastapi-0.142.2-py3-none-any.whl.metadata
+  WARNING: Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NameResolutionError("HTTPSConnection(host='files.pythonhosted.org', port=443): Failed to resolve 'files.pythonhosted.org' ([Errno -3] Temporary failure in name resolution)")': /packages/a0/b6/78aaf9141fb46742928c113f3cf6ef2259d538cb02b604b7656c1dc9883c/fastapi-0.142.2-py3-none-any.whl.metadata
+  WARNING: Retrying (Retry(total=1, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NameResolutionError("HTTPSConnection(host='files.pythonhosted.org', port=443): Failed to resolve 'files.pythonhosted.org' ([Errno -3] Temporary failure in name resolution)")': /packages/a0/b6/78aaf9141fb46742928c113f3cf6ef2259d538cb02b604b7656c1dc9883c/fastapi-0.142.2-py3-none-any.whl.metadata
+  WARNING: Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NameResolutionError("HTTPSConnection(host='files.pythonhosted.org', port=443): Failed to resolve 'files.pythonhosted.org' ([Errno -3] Temporary failure in name resolution)")': /packages/a0/b6/78aaf9141fb46742928c113f3cf6ef2259d538cb02b604b7656c1dc9883c/fastapi-0.142.2-py3-none-any.whl.metadata
+error: connection-failed
+
+× Failed to connect to files.pythonhosted.org while fetching https://files.pythonhosted.org/packages/a0/b6/78aaf9141fb46742928c113f3cf6ef2259d538cb02b604b7656c1dc9883c/fastapi-0.142.2-py3-none-any.whl.metadata
+╰─> Failed to resolve IP address for 'files.pythonhosted.org' ([Errno -3] Temporary failure in name resolution)
+
+hint: Are you connected to the Internet? If so, check whether your system can connect to files.pythonhosted.org before trying again. There may be a firewall or proxy that's preventing the connection.
+[FAIL] requirements installation
+
+============================================================
+CHECK: pip dependency consistency
+============================================================
+WARNING: Ignoring invalid distribution ~ip (/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/.venv/lib/python3.13/site-packages)
+WARNING: Ignoring invalid distribution ~ip (/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/.venv/lib/python3.13/site-packages)
+No broken requirements found.
+[PASS] pip dependency consistency
+
+### PACKAGE IDENTITY ###
+
+============================================================
+CHECK: CLI version
+============================================================
+textrader 4.0.2
+[PASS] CLI version
+
+============================================================
+CHECK: CLI help
+============================================================
+usage: textrader [-h] [--version] [--config CONFIG] [--risk RISK]
+                 {doctor,market,analyze,paper,backtest,research,llm,connector,kill-switch,ingest,web} ...
+
+TEXTRADER X autonomous trading runtime
+
+positional arguments:
+  {doctor,market,analyze,paper,backtest,research,llm,connector,kill-switch,ingest,web}
+    doctor              validate runtime/configuration
+    market              read real public market data
+    analyze             run one XIR decision cycle
+    paper               run paper cycles
+    backtest            run deterministic historical replay
+    research            run auditable knowledge research/search
+    llm                 manage/switch the LLM provider (mock, ollama, openai,
+                        anthropic, custom)
+    connector           manage external source connectors (API key or plain
+                        URL)
+    kill-switch         activate/resume the safety halt
+    ingest              analyze a normalized/manual market JSON snapshot
+    web                 start local web dashboard
+
+options:
+  -h, --help            show this help message and exit
+  --version             show program's version number and exit
+  --config CONFIG       trader.yaml path
+  --risk RISK           risk.yaml path
+[PASS] CLI help
+
+============================================================
+CHECK: Doctor
+============================================================
+{
+  "python": "3.13.12",
+  "config": "ERROR: PyYAML not installed; install with: pip install pyyaml"
+}
+[FAIL] Doctor
+
+### STATIC PYTHON VALIDATION ###
+
+============================================================
+CHECK: compileall trader
+============================================================
+[PASS] compileall trader
+
+============================================================
+CHECK: compileall tests
+============================================================
+[PASS] compileall tests
+
+============================================================
+CHECK: pytest collection
+============================================================
+/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/.venv/bin/python: No module named pytest
+[FAIL] pytest collection
+
+### FULL AUTOMATED TEST SUITE ###
+
+============================================================
+CHECK: FULL PYTEST SUITE
+============================================================
+/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/.venv/bin/python: No module named pytest
+[FAIL] FULL PYTEST SUITE
+[WARN] pytest-cov option not available
+
+### CLI COMMAND SURFACE ###
+usage: textrader doctor [-h]
+
+options:
+  -h, --help  show this help message and exit
+[PASS] CLI command available: doctor
+usage: textrader market [-h] [--interval INTERVAL] [--limit LIMIT]
+                        [--source {binance,bitget}]
+                        symbol
+
+positional arguments:
+  symbol
+
+options:
+  -h, --help            show this help message and exit
+  --interval INTERVAL
+  --limit LIMIT
+  --source {binance,bitget}
+                        public market-data provider
+[PASS] CLI command available: market
+usage: textrader analyze [-h] [--source {mock,binance,bitget}]
+                         [--mode {paper,backtest,live}] [--decision-only]
+                         [symbol]
+
+positional arguments:
+  symbol
+
+options:
+  -h, --help            show this help message and exit
+  --source {mock,binance,bitget}
+  --mode {paper,backtest,live}
+  --decision-only       analysis only: BUY/SELL is reported but never
+                        submitted
+[PASS] CLI command available: analyze
+usage: textrader paper [-h] [--cycles CYCLES] [--interval INTERVAL]
+                       [--source {mock,binance,bitget}] [--decision-only]
+                       [symbol]
+
+positional arguments:
+  symbol
+
+options:
+  -h, --help            show this help message and exit
+  --cycles CYCLES
+  --interval INTERVAL
+  --source {mock,binance,bitget}
+  --decision-only       analysis only: BUY/SELL is reported but never
+                        submitted
+[PASS] CLI command available: paper
+usage: textrader backtest [-h] [--bars BARS]
+
+options:
+  -h, --help   show this help message and exit
+  --bars BARS
+[PASS] CLI command available: backtest
+usage: textrader research [-h] [query]
+
+positional arguments:
+  query
+
+options:
+  -h, --help  show this help message and exit
+[PASS] CLI command available: research
+usage: textrader llm [-h] {list,set,test} ...
+
+positional arguments:
+  {list,set,test}
+    list           show active + available providers
+    set            switch provider (persists to trader.yaml)
+    test           send a 1-token probe through the provider
+
+options:
+  -h, --help       show this help message and exit
+[PASS] CLI command available: llm
+usage: textrader connector [-h] {add,list,test,remove} ...
+
+positional arguments:
+  {add,list,test,remove}
+    add                 register a connector: --base-url+--api-key-env (api
+                        mode) or --url (url mode)
+    list                list registered connectors
+    test                fetch once and report ok/error
+    remove              remove a connector
+
+options:
+  -h, --help            show this help message and exit
+[PASS] CLI command available: connector
+usage: textrader kill-switch [-h] [--reason REASON] {on,off}
+
+positional arguments:
+  {on,off}
+
+options:
+  -h, --help       show this help message and exit
+  --reason REASON
+[PASS] CLI command available: kill-switch
+usage: textrader ingest [-h] input
+
+positional arguments:
+  input       JSON file containing open/high/low/close and portfolio fields
+
+options:
+  -h, --help  show this help message and exit
+[PASS] CLI command available: ingest
+usage: textrader web [-h] [--host HOST] [--port PORT] [--symbol SYMBOL]
+
+options:
+  -h, --help       show this help message and exit
+  --host HOST
+  --port PORT
+  --symbol SYMBOL
+[PASS] CLI command available: web
+
+### MOCK MARKET PATH ###
+
+============================================================
+CHECK: mock BTC market
+CMD: python -m trader.cli market BTC/USDT --source mock --interval 1m --limit 10
+============================================================
+usage: textrader market [-h] [--interval INTERVAL] [--limit LIMIT]
+                        [--source {binance,bitget}]
+                        symbol
+textrader market: error: argument --source: invalid choice: 'mock' (choose from binance, bitget)
+[FAIL] mock BTC market
+
+============================================================
+CHECK: mock BTC analyze paper
+CMD: python -m trader.cli analyze BTC/USDT --source mock --mode paper
+============================================================
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/trader/cli.py", line 313, in <module>
+    main()
+    ~~~~^^
+  File "/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/trader/cli.py", line 309, in main
+    raise SystemExit(args.func(args))
+                     ~~~~~~~~~^^^^^^
+  File "/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/trader/cli.py", line 85, in cmd_analyze
+    o = _build_orchestrator(args)
+  File "/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/trader/cli.py", line 27, in _build_orchestrator
+    rc = load_risk_config(Path(args.risk) if getattr(args, "risk", None) else None)
+  File "/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/trader/core/config.py", line 129, in load_risk_config
+    data = load_yaml(c)
+  File "/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/trader/core/config.py", line 110, in load_yaml
+    raise RuntimeError("PyYAML not installed; install with: pip install pyyaml")
+RuntimeError: PyYAML not installed; install with: pip install pyyaml
+[FAIL] mock BTC analyze paper
+
+### REAL PUBLIC BITGET PATH ###
+Bitget HTTP status: 200
+[PASS] Bitget public REST reachable
+
+============================================================
+CHECK: Bitget BTC market
+CMD: python -m trader.cli market BTC/USDT --source bitget --interval 1m --limit 10
+============================================================
+{
+  "symbol": "BTC/USDT",
+  "ticker": {
+    "category": "SPOT",
+    "symbol": "BTCUSDT",
+    "ts": "1790793201788",
+    "lastPrice": "83867.11",
+    "openPrice24h": "83549.15",
+    "highPrice24h": "85643.47",
+    "lowPrice24h": "82956.58",
+    "ask1Price": "83868.68",
+    "bid1Price": "83868.67",
+    "bid1Size": "0.026988",
+    "ask1Size": "0.317438",
+    "price24hPcnt": "0.00381",
+    "volume24h": "2692.257847",
+    "turnover24h": "226093015.017571",
+    "platformTurnover24h": ""
+  },
+  "best_bid": [
+    83862.29,
+    0.054617
+  ],
+  "best_ask": [
+    83862.3,
+    0.399309
+  ],
+  "bars": 10
+}
+[PASS] Bitget BTC market
+
+============================================================
+CHECK: Bitget BTC analyze paper
+CMD: python -m trader.cli analyze BTC/USDT --source bitget --mode paper
+============================================================
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/trader/cli.py", line 313, in <module>
+    main()
+    ~~~~^^
+  File "/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/trader/cli.py", line 309, in main
+    raise SystemExit(args.func(args))
+                     ~~~~~~~~~^^^^^^
+  File "/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/trader/cli.py", line 85, in cmd_analyze
+    o = _build_orchestrator(args)
+  File "/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/trader/cli.py", line 27, in _build_orchestrator
+    rc = load_risk_config(Path(args.risk) if getattr(args, "risk", None) else None)
+  File "/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/trader/core/config.py", line 129, in load_risk_config
+    data = load_yaml(c)
+  File "/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/trader/core/config.py", line 110, in load_yaml
+    raise RuntimeError("PyYAML not installed; install with: pip install pyyaml")
+RuntimeError: PyYAML not installed; install with: pip install pyyaml
+[FAIL] Bitget BTC analyze paper
+
+### REAL-DATA SEMANTIC VALIDATION ###
+[WARN] Bitget semantic validation skipped because analyze failed
+
+### AGENT2 FAILURE-COVERAGE CHECK ###
+JSON parse failed: Expecting value: line 1 column 1 (char 0)
+[FAIL] Agent2 failure-category coverage
+
+### PAPER TRADING ###
+usage: textrader paper [-h] [--cycles CYCLES] [--interval INTERVAL]
+                       [--source {mock,binance,bitget}] [--decision-only]
+                       [symbol]
+
+positional arguments:
+  symbol
+
+options:
+  -h, --help            show this help message and exit
+  --cycles CYCLES
+  --interval INTERVAL
+  --source {mock,binance,bitget}
+  --decision-only       analysis only: BUY/SELL is reported but never
+                        submitted
+[PASS] paper command available
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/trader/cli.py", line 313, in <module>
+    main()
+    ~~~~^^
+  File "/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/trader/cli.py", line 309, in main
+    raise SystemExit(args.func(args))
+                     ~~~~~~~~~^^^^^^
+  File "/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/trader/cli.py", line 95, in cmd_paper
+    o = _build_orchestrator(args)
+  File "/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/trader/cli.py", line 27, in _build_orchestrator
+    rc = load_risk_config(Path(args.risk) if getattr(args, "risk", None) else None)
+  File "/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/trader/core/config.py", line 129, in load_risk_config
+    data = load_yaml(c)
+  File "/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/trader/core/config.py", line 110, in load_yaml
+    raise RuntimeError("PyYAML not installed; install with: pip install pyyaml")
+RuntimeError: PyYAML not installed; install with: pip install pyyaml
+[WARN] paper BTC/USDT command requires different arguments or failed
+
+### BACKTEST ###
+usage: textrader backtest [-h] [--bars BARS]
+
+options:
+  -h, --help   show this help message and exit
+  --bars BARS
+[PASS] backtest command available
+
+### RESEARCH ###
+usage: textrader research [-h] [query]
+
+positional arguments:
+  query
+
+options:
+  -h, --help  show this help message and exit
+[PASS] research command available
+
+### LLM SUBSYSTEM ###
+usage: textrader llm [-h] {list,set,test} ...
+
+positional arguments:
+  {list,set,test}
+    list           show active + available providers
+    set            switch provider (persists to trader.yaml)
+    test           send a 1-token probe through the provider
+
+options:
+  -h, --help       show this help message and exit
+[PASS] LLM command surface available
+
+### CONNECTOR SUBSYSTEM ###
+usage: textrader connector [-h] {add,list,test,remove} ...
+
+positional arguments:
+  {add,list,test,remove}
+    add                 register a connector: --base-url+--api-key-env (api
+                        mode) or --url (url mode)
+    list                list registered connectors
+    test                fetch once and report ok/error
+    remove              remove a connector
+
+options:
+  -h, --help            show this help message and exit
+[PASS] connector command surface available
+
+### KILL SWITCH ###
+usage: textrader kill-switch [-h] [--reason REASON] {on,off}
+
+positional arguments:
+  {on,off}
+
+options:
+  -h, --help       show this help message and exit
+  --reason REASON
+[PASS] kill-switch command surface available
+
+### INGEST ###
+usage: textrader ingest [-h] input
+
+positional arguments:
+  input       JSON file containing open/high/low/close and portfolio fields
+
+options:
+  -h, --help  show this help message and exit
+[PASS] ingest command surface available
+
+### WEB APPLICATION ###
+[FAIL] web server failed to start
+Web HTTP status: 000
+[WARN] web dashboard did not return HTTP 200: 000
+
+### SAFETY / LIVE-EXECUTION AUDIT ###
+[WARN] Potential order-execution references found; inspect order_execution_matches.txt
+[PASS] Decision-only safety interlock references found
+[WARN] Secret-like identifiers found in source; inspect secret_reference_scan.txt
+
+### RELEASE HYGIENE ###
+[WARN] Not a git checkout
+[WARN] Compiled Python artifacts exist
+
+### PRODUCT SIZE ###
+Core trader/ size: 980K
+Total source tree excluding .venv/audit: 2.7M
+
+============================================================
+AUDIT FINISHED
+============================================================
+PASS=32  WARN=8  FAIL=10
+Summary: /home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/release_audit_20260930_215856/RELEASE_AUDIT_SUMMARY.txt
+Log:     /home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/release_audit_20260930_215856/audit.log
+============================================================

@@ -1,0 +1,2 @@
+ERROR: market data request failed: <urlopen error [Errno -3] Temporary failure in name resolution>
+Hint: verify internet/DNS access and that the exchange endpoint is reachable.

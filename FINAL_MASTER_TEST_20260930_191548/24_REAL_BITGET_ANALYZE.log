@@ -1,0 +1,85 @@
+{
+  "cycle_id": "cyc_39b60487a246",
+  "initial": {
+    "cycle_id": "cyc_39b60487a246",
+    "action": "WAIT",
+    "instrument": "UNKNOWN",
+    "rationale": "no market data",
+    "assumptions": [
+      "mock_llm_policy",
+      "no_look_ahead"
+    ],
+    "evidence": [
+      "market_data",
+      "memory",
+      "user_config"
+    ],
+    "ts": "2026-09-30T19:16:36.571015+00:00"
+  },
+  "failure": {
+    "cycle_id": "cyc_39b60487a246",
+    "paths": [
+      {
+        "category": "wrong_prediction",
+        "description": "direction call may be wrong; no edge measurement available",
+        "severity": "med"
+      },
+      {
+        "category": "logical_inconsistency",
+        "description": "assumptions exist but logical chain not explicitly justified",
+        "severity": "low"
+      },
+      {
+        "category": "missing_data",
+        "description": "market_data section has missing bundles",
+        "severity": "blocking"
+      },
+      {
+        "category": "invalid_assumption",
+        "description": "instrument UNKNOWN not in market data: set()",
+        "severity": "high"
+      },
+      {
+        "category": "risk_violation",
+        "description": "Risk Engine check pending; cannot pre-judge numeric violations",
+        "severity": "low"
+      },
+      {
+        "category": "contradictory_evidence",
+        "description": "insufficient evidence to compare",
+        "severity": "med"
+      },
+      {
+        "category": "tool_failure",
+        "description": "no agent-side tools invoked yet",
+        "severity": "low"
+      },
+      {
+        "category": "model_uncertainty",
+        "description": "no calibrated probability estimate attached to initial decision",
+        "severity": "med"
+      },
+      {
+        "category": "execution_impossibility",
+        "description": "no valid order book data; cannot assess liquidity",
+        "severity": "blocking"
+      }
+    ],
+    "ts": "2026-09-30T19:16:36.572252+00:00"
+  },
+  "final": {
+    "cycle_id": "cyc_39b60487a246",
+    "decision": "WAIT",
+    "overrode_initial": false,
+    "reason": "F3 missing_data blocking ⇒ WAIT until data restored",
+    "ts": "2026-09-30T19:16:36.573344+00:00"
+  },
+  "order": null,
+  "veto": null,
+  "risk": null,
+  "guard_passed": false,
+  "execution": null,
+  "final_state": "IDLE",
+  "reeval_count": 0,
+  "errors": []
+}

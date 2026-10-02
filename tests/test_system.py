@@ -8,9 +8,16 @@ from trader.core.schemas import VetoResponse
 def test_sys_01_blocking_failure_yields_wait(orchestrator):
     """TST-SYS-01 — Agent1=BUY, Agent2 blocking, Agent3=WAIT; no order; override recorded."""
     # Use unreachable source to force F3 blocking
-    from trader.services.data_reader import DataReader, UnreachableSource
-    orchestrator.data_reader = DataReader([UnreachableSource()],
-                                            observability=orchestrator.obs)
+    from trader.market.binance import BinancePublicSource
+    from trader.services.data_reader import DataReader
+
+    class FailingClient:
+        def snapshot(self, symbol, interval, limit):
+            raise TimeoutError("upstream unavailable")
+
+    orchestrator.data_reader = DataReader([
+        BinancePublicSource(["BTC/USDT"], client=FailingClient())
+    ], observability=orchestrator.obs)
     r = orchestrator.run_cycle()
     final = r.final
     assert final is not None
@@ -154,6 +161,25 @@ def test_sys_09_duplicate_idempotency_single_exec(orchestrator):
     # Second submit is idempotent — broker returns ok but doesn't fill again.
     assert "idempotent" in res2.broker_ack.lower()
 
+
+def test_sys_10_missing_orderbook_does_not_raise_internal_error(orchestrator):
+    """Missing Binance orderbook must become a blocking execution finding, not a KeyError."""
+    from trader.market.binance import BinancePublicSource
+    from trader.services.data_reader import DataReader
+
+    class FailingClient:
+        def snapshot(self, symbol, interval, limit):
+            raise TimeoutError("upstream unavailable")
+
+    orchestrator.data_reader = DataReader([
+        BinancePublicSource(["BTC/USDT"], client=FailingClient())
+    ], observability=orchestrator.obs)
+    r = orchestrator.run_cycle()
+    assert r.errors == []
+    assert r.final is not None
+    assert r.final.decision == "WAIT"
+    assert any(p.category == "execution_impossibility" and p.severity == "blocking"
+               for p in r.failure.paths)
 
 def test_sys_10_data_source_down_marked(orchestrator):
     """TST-SYS-10 — source down ⇒ missing_data flagged, cycle continues."""

@@ -99,7 +99,7 @@ methodology.
 - Research command: **PASS**; when no search provider is configured it explicitly reports `searched=false` and returns a source registry rather than fabricating results.
 - Real Binance network call from the builder: **BLOCKED by builder DNS**; the adapter returned a clean error. This does not verify exchange reachability from the user's machine.
 
-## 4.0.1 — 2026-09-27 (this fix)
+## 4.0.2 — 2026-09-27 (kill-switch state synchronization fix)
 
 Measured in a clean venv (`python -m venv` + `pip install -e ".[dev]"`), not
 the host's system Python, so results are TEXTRADER's own dependency graph

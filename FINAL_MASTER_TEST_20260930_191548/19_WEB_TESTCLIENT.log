@@ -1,0 +1,37 @@
+/ -> 200
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TEXTRADER X — Intelligence Control Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:roo
+/api/health -> 200
+{"status":"ok","service":"textrader-control-plane","version":"4.0.2","state":"IDLE","kill_switch":{"active":false,"reason":"","activated_at":null},"history_size":0}
+/api/runs -> 200
+{"runs":[]}
+/api/config -> 200
+{"risk":{"max_position_size":1000.0,"max_daily_loss":0.02,"max_drawdown":0.1,"exposure_limit":0.5,"leverage_limit":1.0,"require_stop_loss":true,"require_take_profit":true,"max_correlation":0.85,"max_portfolio_exposure":0.75,"trading_sessions":["00:00-23:59"],"kill_switch":false},"trader":{"mode":"paper","veto_window_seconds":120,"on_silence":"execute","max_reevaluate_cycles":3,"memory_manager_interval_seconds":7200,"llm_provider":"mock","broker":"mock","initial_equity":100000.0,"data_sources":["
+/api/llm/providers -> 200
+{"active":"mock","available":["anthropic","mock","ollama","openai"]}
+/api/connectors -> 200
+{}
+/api/modules -> 200
+{"modules":[{"id":"overview","label":"Overview","status":"active"},{"id":"cycle","label":"Run Cycle","status":"active"},{"id":"history","label":"History","status":"active"},{"id":"risk","label":"Risk & Kill-Switch","status":"active"},{"id":"llm","label":"LLM Provider","status":"active"},{"id":"connectors","label":"Source Connectors","status":"active"},{"id":"config","label":"Configuration","status":"active"},{"id":"backtesting","label":"Backtesting Lab","status":"reserved","note":"CLI backtest e
+/docs -> 200
+
+    <!DOCTYPE html>
+    <html>
+    <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
+    <link rel="shortcut icon" href="https://fastapi.tiangolo.com/img/favicon.png">
+    <title>TEXTRADER X Control Plane - Swagger UI</title>
+    </head>
+    <body>
+    <div id="swagger-ui">
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swag
+/openapi.json -> 200
+{"openapi":"3.1.0","info":{"title":"TEXTRADER X Control Plane","description":"Auditable admin/control plane for autonomous trading analysis.","version":"4.0.2"},"paths":{"/api/health":{"get":{"summary":"Health","operationId":"health_api_health_get","responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{}}}}}}},"/api/market":{"get":{"summary":"Market","operationId":"market_api_market_get","parameters":[{"name":"symbol","in":"query","required":false,"schem
+WEB_BASIC_ENDPOINTS_OK

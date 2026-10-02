@@ -1,0 +1,3 @@
+ExecutionGuard loaded: <class 'trader.services.execution_guard.ExecutionGuard'>
+(kill_switch: 'KillSwitch', observability=None)
+EXECUTION_GUARD_IMPORT_OK

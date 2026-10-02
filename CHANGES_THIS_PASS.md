@@ -145,3 +145,12 @@ kill-switch/ingest/web`) was left as-is — it was already coherent; if you
 want specific things about it changed (colored output, a different command
 grouping, `rich`-style tables), tell me exactly what bothers you about it and
 I'll do that pass next, rather than guessing and possibly making it worse.
+
+## Bitget read-only decision-only patch — 2026-09-29
+
+- Added native `BitgetMarketClient` + `BitgetPublicSource` using public GET market-data endpoints only.
+- Added `bitget` to `analyze` and `paper` source choices.
+- Added `--decision-only` to `analyze` and `paper`.
+- Decision-only mode fail-closes the silence path to `WAIT`, so no broker submission/fill occurs.
+- Added Bitget parsing/regression tests including symbol normalization, malformed/network failure, and crossed order-book handling.
+- Existing mock/backtest/Binance paths remain available.

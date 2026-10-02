@@ -1,0 +1,40 @@
+{
+  "kill_switch": {
+    "active": false,
+    "reason": "",
+    "activated_at": null
+  },
+  "state": "IDLE"
+}
+{
+  "kill_switch": {
+    "active": true,
+    "reason": "FINAL_MASTER_TEST",
+    "activated_at": "2026-09-30T19:16:15.951974+00:00"
+  },
+  "state": "HALTED"
+}
+{
+  "kill_switch": {
+    "active": true,
+    "reason": "FINAL_MASTER_TEST",
+    "activated_at": "2026-09-30T19:16:16.760074+00:00"
+  },
+  "state": "HALTED"
+}
+{
+  "kill_switch": {
+    "active": false,
+    "reason": "",
+    "activated_at": null
+  },
+  "state": "IDLE"
+}
+{
+  "kill_switch": {
+    "active": false,
+    "reason": "",
+    "activated_at": null
+  },
+  "state": "IDLE"
+}

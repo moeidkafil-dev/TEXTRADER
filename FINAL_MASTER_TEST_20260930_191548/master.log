@@ -1,0 +1,1033 @@
+============================================================
+ TEXTRADER X 4.0.2 — FINAL MASTER TEST
+============================================================
+Started: 2026-09-30T19:15:48+00:00
+Root:    /mnt/data/tex_extract/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE
+Output:  /mnt/data/tex_extract/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/FINAL_MASTER_TEST_20260930_191548
+
+[ENVIRONMENT]
+Python 3.13.5
+pip 25.1.1 from /opt/pyvenv/lib/python3.13/site-packages/pip (python 3.13)
+Linux fad63000ae6e 6.18.44 #1 SMP Sat Sep 26 20:02:31 UTC 2026 x86_64 GNU/Linux
+
+
+============================================================
+TEST: 01_VERSION
+============================================================
+textrader 4.0.2
+[PASS] 01_VERSION
+
+============================================================
+TEST: 02_DOCTOR
+============================================================
+{
+  "python": "3.13.5",
+  "config": "ok",
+  "mode": "paper",
+  "market_data": "mock",
+  "decision_only": false,
+  "db": "data/trader.db"
+}
+[PASS] 02_DOCTOR
+
+============================================================
+TEST: 03_PIP_CHECK
+============================================================
+WARNING: The directory '/home/oai/.cache/pip' or its parent directory is not owned or is not writable by the current user. The cache has been disabled. Check the permissions and owner of that directory. If executing pip with sudo, you should use sudo's -H flag.
+moviepy 2.2.1 has requirement pillow<12.0,>=9.2.0, but you have pillow 12.3.0.
+[FAIL] 03_PIP_CHECK  exit=1
+
+============================================================
+TEST: 04_COMPILE
+============================================================
+[PASS] 04_COMPILE
+
+============================================================
+TEST: 05_FULL_PYTEST
+============================================================
+........................................................................ [ 66%]
+.....................................                                    [100%]
+[PASS] 05_FULL_PYTEST
+
+============================================================
+TEST: 06_COVERAGE
+============================================================
+........................................................................ [ 66%]
+.....................................                                    [100%]
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.13.5-final-0 ________________
+
+Name                                    Stmts   Miss  Cover   Missing
+---------------------------------------------------------------------
+trader/__init__.py                          5      0   100%
+trader/adapters/__init__.py                 0      0   100%
+trader/adapters/broker/__init__.py         10      4    60%   11-14
+trader/adapters/broker/base.py             26      0   100%
+trader/adapters/broker/ccxt.py             39     39     0%   6-55
+trader/adapters/broker/mock.py             36      6    83%   29, 33, 42, 57, 61-62
+trader/adapters/llm.py                    105     55    48%   61-70, 87-88, 93-105, 122-124, 129-143, 157-159, 164-178, 204, 208, 214-218, 241-245, 249-263
+trader/adapters/source_connector.py       121    121     0%   26-192
+trader/agent1.py                            2      2     0%   2-4
+trader/agent2.py                            2      2     0%   2-4
+trader/agent3.py                            2      2     0%   2-4
+trader/cli.py                             246    139    43%   18, 22, 26-43, 47-60, 64-75, 79-88, 92-103, 108-116, 120-122, 126-129, 133-142, 146-151, 155-163, 167-171, 175-178, 182-185, 189-198, 202-212, 304-306, 310-312, 316
+trader/core/__init__.py                     0      0   100%
+trader/core/config.py                     104     17    84%   51, 94, 98, 110, 112, 121, 137-144, 150, 157-158
+trader/core/invariants.py                  28     28     0%   15-69
+trader/core/schemas.py                    215      7    97%   142, 200, 332-334, 363, 365
+trader/core/state_machine.py               61      2    97%   107, 124
+trader/core/util.py                        33      5    85%   22, 35, 39, 48-49
+trader/engine/__init__.py                   2      0   100%
+trader/engine/orchestrator.py             386     55    86%   281, 283, 343, 372-376, 395-399, 445-452, 464-468, 551-555, 559-567, 579-589, 595-600, 604, 630-635, 641, 660-661
+trader/execution_guard.py                   2      2     0%   2-11
+trader/knowledge.py                        23     23     0%   6-43
+trader/market/__init__.py                   3      0   100%
+trader/market/binance.py                   66     11    83%   25-32, 39, 42, 45, 58, 111-119
+trader/market/bitget.py                   105     50    52%   39-40, 43-55, 62-67, 70-75, 78-86, 89-115, 150
+trader/memory/__init__.py                   4      0   100%
+trader/memory/db_manager.py                40      1    98%   62
+trader/memory/manager.py                  103     10    90%   101, 146-152, 161-163
+trader/memory/stores.py                    69      1    99%   137
+trader/position_sizer.py                   13     13     0%   2-48
+trader/research.py                         21     21     0%   6-38
+trader/risk_engine.py                       2      2     0%   2-11
+trader/schemas.py                           3      3     0%   2-27
+trader/scripts/__init__.py                  0      0   100%
+trader/scripts/run_backtest.py             57     57     0%   2-81
+trader/scripts/run_demo.py                 17     17     0%   2-24
+trader/scripts/run_paper.py                38     38     0%   2-63
+trader/scripts/run_research.py              7      7     0%   1-8
+trader/services/__init__.py                 0      0   100%
+trader/services/agent1.py                  57      8    86%   52-56, 75-77, 102-103
+trader/services/agent2.py                  91     17    81%   59, 65-74, 88-90, 100, 112, 144, 162, 166, 178, 199, 207, 215
+trader/services/agent3.py                  66     15    77%   51, 56-59, 76-78, 83, 100-102, 116-119
+trader/services/agent_base.py              62      3    95%   57, 81-82
+trader/services/context_service.py         47      6    87%   44, 56-58, 69-70
+trader/services/data_reader.py             80      5    94%   26, 139-144
+trader/services/decision_engine.py         46      3    93%   25, 35, 57
+trader/services/decision_validator.py      34      8    76%   30, 32, 34, 36, 38, 51-53
+trader/services/execution_guard.py         22      0   100%
+trader/services/final_tools.py             36      5    86%   28, 65-69
+trader/services/kill_switch.py             56      8    86%   39-40, 45, 55-56, 62, 74-75
+trader/services/message_service.py         79     17    78%   33-36, 44-52, 92, 95, 124-127, 140-141
+trader/services/metrics.py                 23     23     0%   2-33
+trader/services/observability.py           52     13    75%   35, 38-39, 54-57, 64-66, 69-72
+trader/services/position_sizer.py          24      2    92%   26, 29
+trader/services/risk_engine.py             66      9    86%   55-68
+trader/services/super_agent.py             42      5    88%   24-28
+trader/storage/__init__.py                  3      0   100%
+trader/storage/connection.py               74     19    74%   56-64, 71, 80-83, 124, 145-148
+trader/storage/repo.py                    111     24    78%   26, 28, 38-39, 115-116, 129-130, 185-190, 203-214
+trader/storage/schema.py                    8      1    88%   161
+trader/super_agent.py                      22     22     0%   7-46
+trader/web/__init__.py                      0      0   100%
+trader/web/server.py                      284     83    71%   96-98, 108, 111, 115, 117, 119, 121, 126, 130, 133, 142, 149, 159, 254, 264-275, 279-289, 298, 302-305, 309-311, 315-317, 321, 326-327, 331-341, 345-346, 351-353, 357-359, 363-367, 371-373, 380, 407-410
+---------------------------------------------------------------------
+TOTAL                                    3381   1036    69%
+[PASS] 06_COVERAGE
+
+============================================================
+TEST: 07_HELP
+============================================================
+usage: textrader [-h] [--version] [--config CONFIG] [--risk RISK]
+                 {doctor,market,analyze,paper,backtest,research,llm,connector,kill-switch,ingest,web} ...
+
+TEXTRADER X autonomous trading runtime
+
+positional arguments:
+  {doctor,market,analyze,paper,backtest,research,llm,connector,kill-switch,ingest,web}
+    doctor              validate runtime/configuration
+    market              read real public market data
+    analyze             run one XIR decision cycle
+    paper               run paper cycles
+    backtest            run deterministic historical replay
+    research            run auditable knowledge research/search
+    llm                 manage/switch the LLM provider (mock, ollama, openai,
+                        anthropic, custom)
+    connector           manage external source connectors (API key or plain
+                        URL)
+    kill-switch         activate/resume the safety halt
+    ingest              analyze a normalized/manual market JSON snapshot
+    web                 start local web dashboard
+
+options:
+  -h, --help            show this help message and exit
+  --version             show program's version number and exit
+  --config CONFIG       trader.yaml path
+  --risk RISK           risk.yaml path
+usage: textrader analyze [-h] [--source {mock,binance,bitget}]
+                         [--mode {paper,backtest,live}] [--decision-only]
+                         [symbol]
+
+positional arguments:
+  symbol
+
+options:
+  -h, --help            show this help message and exit
+  --source {mock,binance,bitget}
+  --mode {paper,backtest,live}
+  --decision-only       analysis only: BUY/SELL is reported but never
+                        submitted
+usage: textrader paper [-h] [--cycles CYCLES] [--interval INTERVAL]
+                       [--source {mock,binance,bitget}] [--decision-only]
+                       [symbol]
+
+positional arguments:
+  symbol
+
+options:
+  -h, --help            show this help message and exit
+  --cycles CYCLES
+  --interval INTERVAL
+  --source {mock,binance,bitget}
+  --decision-only       analysis only: BUY/SELL is reported but never
+                        submitted
+usage: textrader backtest [-h] [--bars BARS]
+
+options:
+  -h, --help   show this help message and exit
+  --bars BARS
+usage: textrader market [-h] [--interval INTERVAL] [--limit LIMIT]
+                        [--source {binance,bitget}]
+                        symbol
+
+positional arguments:
+  symbol
+
+options:
+  -h, --help            show this help message and exit
+  --interval INTERVAL
+  --limit LIMIT
+  --source {binance,bitget}
+                        public market-data provider
+usage: textrader research [-h] [query]
+
+positional arguments:
+  query
+
+options:
+  -h, --help  show this help message and exit
+usage: textrader llm [-h] {list,set,test} ...
+
+positional arguments:
+  {list,set,test}
+    list           show active + available providers
+    set            switch provider (persists to trader.yaml)
+    test           send a 1-token probe through the provider
+
+options:
+  -h, --help       show this help message and exit
+usage: textrader connector [-h] {add,list,test,remove} ...
+
+positional arguments:
+  {add,list,test,remove}
+    add                 register a connector: --base-url+--api-key-env (api
+                        mode) or --url (url mode)
+    list                list registered connectors
+    test                fetch once and report ok/error
+    remove              remove a connector
+
+options:
+  -h, --help            show this help message and exit
+usage: textrader kill-switch [-h] [--reason REASON] {status,on,off}
+
+positional arguments:
+  {status,on,off}
+
+options:
+  -h, --help       show this help message and exit
+  --reason REASON
+usage: textrader ingest [-h] input
+
+positional arguments:
+  input       JSON file containing open/high/low/close and portfolio fields
+
+options:
+  -h, --help  show this help message and exit
+usage: textrader web [-h] [--host HOST] [--port PORT] [--symbol SYMBOL]
+
+options:
+  -h, --help       show this help message and exit
+  --host HOST
+  --port PORT
+  --symbol SYMBOL
+[PASS] 07_HELP
+
+============================================================
+TEST: 08_MOCK_ANALYZE
+============================================================
+{
+  "cycle_id": "cyc_f3ea05a89d34",
+  "initial": {
+    "cycle_id": "cyc_f3ea05a89d34",
+    "action": "BUY",
+    "instrument": "BTC/USDT",
+    "rationale": "close 99.6477 > open 99.4976; range 0.007",
+    "assumptions": [
+      "mock_llm_policy",
+      "no_look_ahead"
+    ],
+    "evidence": [
+      "market_data",
+      "memory",
+      "user_config"
+    ],
+    "ts": "2026-09-30T19:16:11.382759+00:00"
+  },
+  "failure": {
+    "cycle_id": "cyc_f3ea05a89d34",
+    "paths": [
+      {
+        "category": "wrong_prediction",
+        "description": "direction call may be wrong; no edge measurement available",
+        "severity": "med"
+      },
+      {
+        "category": "logical_inconsistency",
+        "description": "assumptions exist but logical chain not explicitly justified",
+        "severity": "low"
+      },
+      {
+        "category": "missing_data",
+        "description": "no missing bundles detected",
+        "severity": "low"
+      },
+      {
+        "category": "invalid_assumption",
+        "description": "instrument present; assumptions consistent",
+        "severity": "low"
+      },
+      {
+        "category": "risk_violation",
+        "description": "Risk Engine check pending; cannot pre-judge numeric violations",
+        "severity": "low"
+      },
+      {
+        "category": "contradictory_evidence",
+        "description": "news and price action broadly consistent",
+        "severity": "low"
+      },
+      {
+        "category": "tool_failure",
+        "description": "no agent-side tools invoked yet",
+        "severity": "low"
+      },
+      {
+        "category": "model_uncertainty",
+        "description": "no calibrated probability estimate attached to initial decision",
+        "severity": "med"
+      },
+      {
+        "category": "execution_impossibility",
+        "description": "order book has liquidity both sides; no execution impossibility detected",
+        "severity": "low"
+      }
+    ],
+    "ts": "2026-09-30T19:16:11.383551+00:00"
+  },
+  "final": {
+    "cycle_id": "cyc_f3ea05a89d34",
+    "decision": "BUY",
+    "overrode_initial": false,
+    "reason": "no blocking failures; accepting initial",
+    "ts": "2026-09-30T19:16:11.385191+00:00"
+  },
+  "order": {
+    "order_id": "1151bd6a-e95c-40ef-af50-7e795e7d898b",
+    "idempotency_key": "ik_460781cab79d",
+    "cycle_id": "cyc_f3ea05a89d34",
+    "side": "BUY",
+    "instrument": "BTC/USDT",
+    "size": 100.35354554094073,
+    "sl": 98.651223,
+    "tp": 101.640654,
+    "ts": "2026-09-30T19:16:11.385466+00:00"
+  },
+  "veto": {
+    "order_id": "1151bd6a-e95c-40ef-af50-7e795e7d898b",
+    "notified_at": "2026-09-30T19:16:11.386069+00:00",
+    "response": "WAIT",
+    "responded_at": "2026-09-30T19:16:11.386086+00:00"
+  },
+  "risk": null,
+  "guard_passed": false,
+  "execution": null,
+  "final_state": "IDLE",
+  "reeval_count": 0,
+  "errors": []
+}
+[PASS] 08_MOCK_ANALYZE
+
+============================================================
+TEST: 09_MOCK_PAPER
+============================================================
+[1/20] cycle=cyc_79d7c0a360fb state=IDLE decision=BUY errors=0
+[2/20] cycle=cyc_129aed4b5e9e state=IDLE decision=WAIT errors=0
+[3/20] cycle=cyc_9fcaef72cd20 state=IDLE decision=BUY errors=0
+[4/20] cycle=cyc_b7d2f232289c state=IDLE decision=WAIT errors=0
+[5/20] cycle=cyc_564f7d0929dc state=IDLE decision=BUY errors=0
+[6/20] cycle=cyc_abd917bd0e5e state=IDLE decision=WAIT errors=0
+[7/20] cycle=cyc_ab8c8122fc47 state=IDLE decision=BUY errors=0
+[8/20] cycle=cyc_dee637ce7792 state=IDLE decision=WAIT errors=0
+[9/20] cycle=cyc_f398bdfe6ad3 state=IDLE decision=BUY errors=0
+[10/20] cycle=cyc_7303076b7839 state=IDLE decision=BUY errors=0
+[11/20] cycle=cyc_9caeac86d552 state=IDLE decision=BUY errors=0
+[12/20] cycle=cyc_2ee24c60fbff state=IDLE decision=WAIT errors=0
+[13/20] cycle=cyc_d47b18bd8ff9 state=IDLE decision=BUY errors=0
+[14/20] cycle=cyc_51f69b69177a state=IDLE decision=BUY errors=0
+[15/20] cycle=cyc_b2f93f578691 state=IDLE decision=BUY errors=0
+[16/20] cycle=cyc_84dbad718f7e state=IDLE decision=BUY errors=0
+[17/20] cycle=cyc_7468ec168ab2 state=IDLE decision=BUY errors=0
+[18/20] cycle=cyc_7d8c6f606d8b state=IDLE decision=WAIT errors=0
+[19/20] cycle=cyc_794e16f377be state=IDLE decision=BUY errors=0
+[20/20] cycle=cyc_bef9c7a9ba29 state=IDLE decision=BUY errors=0
+[PASS] 09_MOCK_PAPER
+
+============================================================
+TEST: 10_BACKTEST
+============================================================
+[bar   0] cyc_1c5cbbb2cc40 final=BUY          exec=filled     state=IDLE
+[bar   1] cyc_d3db66c89e0d final=SELL         exec=filled     state=IDLE
+[bar   2] cyc_ee1531410c9d final=SELL         exec=filled     state=IDLE
+[bar   3] cyc_af95a17b2727 final=SELL         exec=filled     state=IDLE
+[bar   4] cyc_fbf49428b566 final=BUY          exec=filled     state=IDLE
+[bar   5] cyc_5bd8707df0ba final=BUY          exec=filled     state=IDLE
+[bar   6] cyc_d7ed20d6b641 final=SELL         exec=filled     state=IDLE
+[bar   7] cyc_4adefec8d277 final=BUY          exec=filled     state=IDLE
+[bar   8] cyc_efafab90bc54 final=SELL         exec=filled     state=IDLE
+[bar   9] cyc_18eaa64e9086 final=SELL         exec=filled     state=IDLE
+[bar  10] cyc_9009d9844d4c final=BUY          exec=filled     state=IDLE
+[bar  11] cyc_70dbcd25e7e1 final=WAIT         exec=-          state=IDLE
+[bar  12] cyc_311395e8b438 final=BUY          exec=filled     state=IDLE
+[bar  13] cyc_6245e3b1f0f1 final=SELL         exec=filled     state=IDLE
+[bar  14] cyc_fe6c112a0359 final=BUY          exec=filled     state=IDLE
+[bar  15] cyc_329e2941e7df final=BUY          exec=filled     state=IDLE
+[bar  16] cyc_eef3ac4d3528 final=BUY          exec=filled     state=IDLE
+[bar  17] cyc_ab3c7cc1fc49 final=SELL         exec=filled     state=IDLE
+[bar  18] cyc_4c49741b6dca final=BUY          exec=filled     state=IDLE
+[bar  19] cyc_4702f5a83bb4 final=SELL         exec=filled     state=IDLE
+[bar  20] cyc_11a98b1c954b final=SELL         exec=filled     state=IDLE
+[bar  21] cyc_00aaa6f16842 final=SELL         exec=filled     state=IDLE
+[bar  22] cyc_aea282adab42 final=BUY          exec=filled     state=IDLE
+[bar  23] cyc_4f70759cf4a5 final=SELL         exec=filled     state=IDLE
+[bar  24] cyc_b4ae65f7d7f2 final=BUY          exec=filled     state=IDLE
+[bar  25] cyc_92a4685dae3a final=SELL         exec=filled     state=IDLE
+[bar  26] cyc_460a0beb6842 final=SELL         exec=filled     state=IDLE
+[bar  27] cyc_7503dfdea057 final=BUY          exec=filled     state=IDLE
+[bar  28] cyc_dc419532766c final=BUY          exec=filled     state=IDLE
+[bar  29] cyc_5820a57e07b5 final=BUY          exec=filled     state=IDLE
+[bar  30] cyc_fccf9265c2bf final=SELL         exec=filled     state=IDLE
+[bar  31] cyc_edd9d67d406d final=SELL         exec=filled     state=IDLE
+[bar  32] cyc_ef5d978cb47d final=SELL         exec=filled     state=IDLE
+[bar  33] cyc_896f8ee2ca04 final=SELL         exec=filled     state=IDLE
+[bar  34] cyc_df63c9e76037 final=SELL         exec=filled     state=IDLE
+[bar  35] cyc_1062477a1534 final=BUY          exec=filled     state=IDLE
+[bar  36] cyc_e8ef3530d86f final=SELL         exec=filled     state=IDLE
+[bar  37] cyc_e52dd4231906 final=BUY          exec=filled     state=IDLE
+[bar  38] cyc_cc495e3beee4 final=WAIT         exec=-          state=IDLE
+[bar  39] cyc_f1e1216c90c8 final=WAIT         exec=-          state=IDLE
+[bar  40] cyc_7b9465b5266b final=SELL         exec=filled     state=IDLE
+[bar  41] cyc_1eab0f0c0c41 final=WAIT         exec=-          state=IDLE
+[bar  42] cyc_5891a44cbebd final=BUY          exec=filled     state=IDLE
+[bar  43] cyc_ef233e7e6166 final=BUY          exec=filled     state=IDLE
+[bar  44] cyc_9da159b19997 final=SELL         exec=filled     state=IDLE
+[bar  45] cyc_ef4b2f275b07 final=SELL         exec=filled     state=IDLE
+[bar  46] cyc_a2d01b0ce997 final=BUY          exec=filled     state=IDLE
+[bar  47] cyc_335186bf309e final=SELL         exec=filled     state=IDLE
+[bar  48] cyc_67a9af904b6a final=BUY          exec=filled     state=IDLE
+[bar  49] cyc_6959aa8f7b3a final=BUY          exec=filled     state=IDLE
+[bar  50] cyc_50798a44e7e6 final=BUY          exec=filled     state=IDLE
+[bar  51] cyc_ded1518c4bd4 final=SELL         exec=filled     state=IDLE
+[bar  52] cyc_ab68415305ef final=BUY          exec=filled     state=IDLE
+[bar  53] cyc_7d7d4c8e5397 final=BUY          exec=filled     state=IDLE
+[bar  54] cyc_093d5bd1f460 final=BUY          exec=filled     state=IDLE
+[bar  55] cyc_dc775cf2e2c4 final=BUY          exec=filled     state=IDLE
+[bar  56] cyc_c0617b246274 final=SELL         exec=filled     state=IDLE
+[bar  57] cyc_80e6f024cb85 final=WAIT         exec=-          state=IDLE
+[bar  58] cyc_005f9ea1d9fe final=BUY          exec=filled     state=IDLE
+[bar  59] cyc_da2f3e312533 final=SELL         exec=filled     state=IDLE
+[bar  60] cyc_4b5a0f0c4ed6 final=SELL         exec=filled     state=IDLE
+[bar  61] cyc_aec8f43127f0 final=BUY          exec=filled     state=IDLE
+[bar  62] cyc_5c59efbb9446 final=WAIT         exec=-          state=IDLE
+[bar  63] cyc_a4a97e767f37 final=SELL         exec=filled     state=IDLE
+[bar  64] cyc_6fad4e492382 final=SELL         exec=filled     state=IDLE
+[bar  65] cyc_eba2bc41bdd0 final=SELL         exec=filled     state=IDLE
+[bar  66] cyc_7d79f9f5967a final=SELL         exec=filled     state=IDLE
+[bar  67] cyc_229d7a18ecb5 final=BUY          exec=filled     state=IDLE
+[bar  68] cyc_b4764a9732cb final=BUY          exec=filled     state=IDLE
+[bar  69] cyc_425c67be271c final=WAIT         exec=-          state=IDLE
+[bar  70] cyc_5d2bab35c615 final=WAIT         exec=-          state=IDLE
+[bar  71] cyc_407edadde957 final=BUY          exec=filled     state=IDLE
+[bar  72] cyc_587bedc82187 final=BUY          exec=filled     state=IDLE
+[bar  73] cyc_e1370d83224a final=SELL         exec=filled     state=IDLE
+[bar  74] cyc_c00f0c7e87c1 final=BUY          exec=filled     state=IDLE
+[bar  75] cyc_3eb2f76d2cd2 final=BUY          exec=filled     state=IDLE
+[bar  76] cyc_7383928b1b63 final=SELL         exec=filled     state=IDLE
+[bar  77] cyc_3fb42961d8ee final=BUY          exec=filled     state=IDLE
+[bar  78] cyc_b261f3d549f6 final=WAIT         exec=-          state=IDLE
+[bar  79] cyc_4a73141aba8e final=BUY          exec=filled     state=IDLE
+[bar  80] cyc_8aa0dd8ae3ee final=SELL         exec=filled     state=IDLE
+[bar  81] cyc_876e2abfa5b6 final=SELL         exec=filled     state=IDLE
+[bar  82] cyc_dd969aa9cab3 final=SELL         exec=filled     state=IDLE
+[bar  83] cyc_a102096475cf final=SELL         exec=filled     state=IDLE
+[bar  84] cyc_d69182e6beb7 final=BUY          exec=filled     state=IDLE
+[bar  85] cyc_04b9a16352cb final=BUY          exec=filled     state=IDLE
+[bar  86] cyc_70ced4a008b2 final=BUY          exec=filled     state=IDLE
+[bar  87] cyc_8c8db1c64934 final=BUY          exec=filled     state=IDLE
+[bar  88] cyc_b92286e605e8 final=SELL         exec=filled     state=IDLE
+[bar  89] cyc_7a271127da43 final=BUY          exec=filled     state=IDLE
+[bar  90] cyc_3f38406cbfe0 final=WAIT         exec=-          state=IDLE
+[bar  91] cyc_c98e86171d25 final=SELL         exec=filled     state=IDLE
+[bar  92] cyc_93649079ba72 final=BUY          exec=filled     state=IDLE
+[bar  93] cyc_a341e0563046 final=SELL         exec=filled     state=IDLE
+[bar  94] cyc_1e6281490266 final=BUY          exec=filled     state=IDLE
+[bar  95] cyc_5969daacfa79 final=BUY          exec=filled     state=IDLE
+[bar  96] cyc_7d249318945c final=WAIT         exec=-          state=IDLE
+[bar  97] cyc_6a9db386f58f final=BUY          exec=filled     state=IDLE
+[bar  98] cyc_1054b691e42c final=BUY          exec=filled     state=IDLE
+[bar  99] cyc_87330044beb5 final=SELL         exec=filled     state=IDLE
+[bar 100] cyc_ab05cdb09fd0 final=SELL         exec=filled     state=IDLE
+[bar 101] cyc_f9605838a0b5 final=BUY          exec=filled     state=IDLE
+[bar 102] cyc_75f303294b02 final=SELL         exec=filled     state=IDLE
+[bar 103] cyc_04dd489bea49 final=SELL         exec=filled     state=IDLE
+[bar 104] cyc_23e42a396c06 final=SELL         exec=filled     state=IDLE
+[bar 105] cyc_a27199719c68 final=SELL         exec=filled     state=IDLE
+[bar 106] cyc_07ee0f813f43 final=SELL         exec=filled     state=IDLE
+[bar 107] cyc_6c46477f5b3d final=SELL         exec=filled     state=IDLE
+[bar 108] cyc_445426a968e4 final=SELL         exec=filled     state=IDLE
+[bar 109] cyc_78652c7bcd60 final=BUY          exec=filled     state=IDLE
+[bar 110] cyc_8e1b06ddae76 final=SELL         exec=filled     state=IDLE
+[bar 111] cyc_eb71f0a9553f final=BUY          exec=filled     state=IDLE
+[bar 112] cyc_ba6ab1cfc686 final=BUY          exec=filled     state=IDLE
+[bar 113] cyc_6cbd69eaacc9 final=SELL         exec=filled     state=IDLE
+[bar 114] cyc_9e1439e20f3f final=BUY          exec=filled     state=IDLE
+[bar 115] cyc_d6a3d948c44e final=BUY          exec=filled     state=IDLE
+[bar 116] cyc_c0e74e79f9f6 final=SELL         exec=filled     state=IDLE
+[bar 117] cyc_508a96452fb3 final=BUY          exec=filled     state=IDLE
+[bar 118] cyc_7ce6f2d5b7d1 final=WAIT         exec=-          state=IDLE
+[bar 119] cyc_9d1b9190de0c final=WAIT         exec=-          state=IDLE
+[bar 120] cyc_4bc9df232038 final=BUY          exec=filled     state=IDLE
+[bar 121] cyc_e8da9c157412 final=BUY          exec=filled     state=IDLE
+[bar 122] cyc_95f51f69288c final=WAIT         exec=-          state=IDLE
+[bar 123] cyc_32efdcfdb8b7 final=BUY          exec=filled     state=IDLE
+[bar 124] cyc_f330da4bd94c final=SELL         exec=filled     state=IDLE
+[bar 125] cyc_6e0b2b272651 final=BUY          exec=filled     state=IDLE
+[bar 126] cyc_a3eb89272d88 final=BUY          exec=filled     state=IDLE
+[bar 127] cyc_23fd322cef2c final=WAIT         exec=-          state=IDLE
+[bar 128] cyc_c714860bf0cd final=BUY          exec=filled     state=IDLE
+[bar 129] cyc_7b1729a0ca31 final=SELL         exec=filled     state=IDLE
+[bar 130] cyc_4344c90c3cc5 final=SELL         exec=filled     state=IDLE
+[bar 131] cyc_d71b23092b2c final=SELL         exec=filled     state=IDLE
+[bar 132] cyc_2de8b51105aa final=BUY          exec=filled     state=IDLE
+[bar 133] cyc_adf0bbce27df final=BUY          exec=filled     state=IDLE
+[bar 134] cyc_0b47f95c649c final=WAIT         exec=-          state=IDLE
+[bar 135] cyc_148a2a17bdda final=SELL         exec=filled     state=IDLE
+[bar 136] cyc_4b85706fdae4 final=SELL         exec=filled     state=IDLE
+[bar 137] cyc_8fb4a4d6e697 final=BUY          exec=filled     state=IDLE
+[bar 138] cyc_91b6b12b0260 final=BUY          exec=filled     state=IDLE
+[bar 139] cyc_604f55df423e final=BUY          exec=filled     state=IDLE
+[bar 140] cyc_708cbde90086 final=SELL         exec=filled     state=IDLE
+[bar 141] cyc_7827bc831794 final=SELL         exec=filled     state=IDLE
+[bar 142] cyc_278143af2feb final=WAIT         exec=-          state=IDLE
+[bar 143] cyc_55eb62f4c00f final=BUY          exec=filled     state=IDLE
+[bar 144] cyc_369048f33c9e final=BUY          exec=filled     state=IDLE
+[bar 145] cyc_fb9ab4aaae96 final=BUY          exec=filled     state=IDLE
+[bar 146] cyc_872eb8d715dc final=SELL         exec=-          state=IDLE
+[bar 147] cyc_32a55e0d98e4 final=WAIT         exec=-          state=IDLE
+[bar 148] cyc_ca67f3d6f8cc final=BUY          exec=-          state=IDLE
+[bar 149] cyc_61132f48c42f final=BUY          exec=-          state=IDLE
+[bar 150] cyc_617f8fff2031 final=SELL         exec=-          state=IDLE
+[bar 151] cyc_59034cb2c2cd final=BUY          exec=-          state=IDLE
+[bar 152] cyc_04733dc37d6e final=SELL         exec=-          state=IDLE
+[bar 153] cyc_10d421a9bca3 final=SELL         exec=-          state=IDLE
+[bar 154] cyc_d62dbb71d787 final=BUY          exec=-          state=IDLE
+[bar 155] cyc_36ef1bea03c9 final=SELL         exec=-          state=IDLE
+[bar 156] cyc_b4498c4689dc final=BUY          exec=-          state=IDLE
+[bar 157] cyc_8ef83adf38f1 final=BUY          exec=-          state=IDLE
+[bar 158] cyc_8edcc0e00ef7 final=SELL         exec=-          state=IDLE
+[bar 159] cyc_1a48db27d003 final=BUY          exec=-          state=IDLE
+[bar 160] cyc_9ddedc016906 final=BUY          exec=-          state=IDLE
+[bar 161] cyc_635d6c98b389 final=SELL         exec=-          state=IDLE
+[bar 162] cyc_a3a5e1ee5d2d final=BUY          exec=-          state=IDLE
+[bar 163] cyc_36451ea6cfc3 final=WAIT         exec=-          state=IDLE
+[bar 164] cyc_158948b97c69 final=BUY          exec=-          state=IDLE
+[bar 165] cyc_d3e03986f833 final=SELL         exec=-          state=IDLE
+[bar 166] cyc_b0925ebaed50 final=BUY          exec=-          state=IDLE
+[bar 167] cyc_db73ddb340f9 final=BUY          exec=-          state=IDLE
+[bar 168] cyc_e24624dcad7f final=WAIT         exec=-          state=IDLE
+[bar 169] cyc_af3f1548a3cb final=BUY          exec=-          state=IDLE
+[bar 170] cyc_ab5c4267bdc6 final=BUY          exec=-          state=IDLE
+[bar 171] cyc_0011fe54e39a final=SELL         exec=-          state=IDLE
+[bar 172] cyc_64341328f6fc final=SELL         exec=-          state=IDLE
+[bar 173] cyc_308c097d918d final=SELL         exec=-          state=IDLE
+[bar 174] cyc_7dde8060539f final=SELL         exec=-          state=IDLE
+[bar 175] cyc_f9e0de740474 final=BUY          exec=-          state=IDLE
+[bar 176] cyc_c21cf87b6d4b final=WAIT         exec=-          state=IDLE
+[bar 177] cyc_8f0355213f09 final=BUY          exec=-          state=IDLE
+[bar 178] cyc_77245acfbae5 final=SELL         exec=-          state=IDLE
+[bar 179] cyc_544b7179b80b final=SELL         exec=-          state=IDLE
+[bar 180] cyc_97ee39344c7c final=SELL         exec=-          state=IDLE
+[bar 181] cyc_8934d3f42471 final=SELL         exec=-          state=IDLE
+[bar 182] cyc_75e3cde93d5c final=BUY          exec=-          state=IDLE
+[bar 183] cyc_c62ff84bf81e final=BUY          exec=-          state=IDLE
+[bar 184] cyc_aaa87ab15d57 final=BUY          exec=-          state=IDLE
+[bar 185] cyc_df5e687000f8 final=SELL         exec=-          state=IDLE
+[bar 186] cyc_025eb9088d82 final=SELL         exec=-          state=IDLE
+[bar 187] cyc_5a831c99a9f9 final=BUY          exec=-          state=IDLE
+[bar 188] cyc_c3aa92d61783 final=BUY          exec=-          state=IDLE
+[bar 189] cyc_9dc632d82b6a final=SELL         exec=-          state=IDLE
+[bar 190] cyc_98c919b0d2ec final=BUY          exec=-          state=IDLE
+[bar 191] cyc_b0bcab91889b final=BUY          exec=-          state=IDLE
+[bar 192] cyc_f6d77875b3a8 final=BUY          exec=-          state=IDLE
+[bar 193] cyc_cacd30d3ea57 final=SELL         exec=-          state=IDLE
+[bar 194] cyc_871382132f45 final=SELL         exec=-          state=IDLE
+[bar 195] cyc_e5d207dd3ab5 final=SELL         exec=-          state=IDLE
+[bar 196] cyc_ecb9499d4096 final=BUY          exec=-          state=IDLE
+[bar 197] cyc_b29d9234dfe2 final=BUY          exec=-          state=IDLE
+[bar 198] cyc_72d5f8e27c9a final=SELL         exec=-          state=IDLE
+[bar 199] cyc_826506036dbb final=BUY          exec=-          state=IDLE
+
+Backtest summary:
+{
+  "bars_replayed": 200,
+  "buys": 95,
+  "sells": 84,
+  "waits": 21,
+  "reevals": 0,
+  "filled": 129
+}
+[PASS] 10_BACKTEST
+
+============================================================
+TEST: 11_KILL_SWITCH_CLI
+============================================================
+{
+  "kill_switch": {
+    "active": false,
+    "reason": "",
+    "activated_at": null
+  },
+  "state": "IDLE"
+}
+{
+  "kill_switch": {
+    "active": true,
+    "reason": "FINAL_MASTER_TEST",
+    "activated_at": "2026-09-30T19:16:15.951974+00:00"
+  },
+  "state": "HALTED"
+}
+{
+  "kill_switch": {
+    "active": true,
+    "reason": "FINAL_MASTER_TEST",
+    "activated_at": "2026-09-30T19:16:16.760074+00:00"
+  },
+  "state": "HALTED"
+}
+{
+  "kill_switch": {
+    "active": false,
+    "reason": "",
+    "activated_at": null
+  },
+  "state": "IDLE"
+}
+{
+  "kill_switch": {
+    "active": false,
+    "reason": "",
+    "activated_at": null
+  },
+  "state": "IDLE"
+}
+[PASS] 11_KILL_SWITCH_CLI
+
+============================================================
+TEST: 12_KILL_SWITCH_PERSISTENCE
+============================================================
+KILL_SWITCH_PERSISTENCE_OK
+db = /tmp/tmpedyu6kls.db
+[PASS] 12_KILL_SWITCH_PERSISTENCE
+
+============================================================
+TEST: 13_POSITION_SIZING_BOUNDARIES
+============================================================
+PositionSizer: <trader.position_sizer.PositionSizer object at 0x7fbc01f2e510>
+BAD_INPUT 0 -> SizingResult(quantity=0.0, notional=0.0, risk_amount=0.0, risk_fraction=0.005, stop_distance=0.0, reason='invalid equity')
+BAD_INPUT -1 -> SizingResult(quantity=0.0, notional=0.0, risk_amount=0.0, risk_fraction=0.005, stop_distance=0.0, reason='invalid equity')
+BAD_INPUT nan -> SizingResult(quantity=0.0, notional=0.0, risk_amount=0.0, risk_fraction=0.005, stop_distance=0.0, reason='invalid equity')
+BAD_INPUT inf -> SizingResult(quantity=0.0, notional=0.0, risk_amount=0.0, risk_fraction=0.005, stop_distance=0.0, reason='invalid equity')
+BAD_INPUT -inf -> SizingResult(quantity=0.0, notional=0.0, risk_amount=0.0, risk_fraction=0.005, stop_distance=0.0, reason='invalid equity')
+POSITION_SIZING_BOUNDARY_TEST_FINISHED
+[PASS] 13_POSITION_SIZING_BOUNDARIES
+
+============================================================
+TEST: 14_RISK_BOUNDARIES
+============================================================
+RiskEngine: <class 'trader.services.risk_engine.RiskEngine'>
+CASE: {'equity': 0}
+EXCEPTION: TypeError RiskEngine.__init__() missing 1 required positional argument: 'config'
+CASE: {'equity': -100}
+EXCEPTION: TypeError RiskEngine.__init__() missing 1 required positional argument: 'config'
+CASE: {'price': 0}
+EXCEPTION: TypeError RiskEngine.__init__() missing 1 required positional argument: 'config'
+CASE: {'price': -1}
+EXCEPTION: TypeError RiskEngine.__init__() missing 1 required positional argument: 'config'
+CASE: {'equity': nan}
+EXCEPTION: TypeError RiskEngine.__init__() missing 1 required positional argument: 'config'
+CASE: {'equity': inf}
+EXCEPTION: TypeError RiskEngine.__init__() missing 1 required positional argument: 'config'
+RISK_BOUNDARY_TEST_FINISHED
+[PASS] 14_RISK_BOUNDARIES
+
+============================================================
+TEST: 15_EXECUTION_GUARD
+============================================================
+ExecutionGuard loaded: <class 'trader.services.execution_guard.ExecutionGuard'>
+(kill_switch: 'KillSwitch', observability=None)
+EXECUTION_GUARD_IMPORT_OK
+[PASS] 15_EXECUTION_GUARD
+
+============================================================
+TEST: 16_AGENT_MODULE_IMPORTS
+============================================================
+[OK] trader
+[OK] trader.cli
+[OK] trader.super_agent
+[OK] trader.agent1
+[OK] trader.agent2
+[OK] trader.agent3
+[OK] trader.position_sizer
+[OK] trader.risk_engine
+[OK] trader.execution_guard
+[OK] trader.web.server
+[OK] trader.adapters.llm
+[OK] trader.adapters.broker.ccxt
+ALL_IMPORTS_OK
+[PASS] 16_AGENT_MODULE_IMPORTS
+
+============================================================
+TEST: 17_ADVERSARIAL_INPUT_VALIDATION
+============================================================
+
+CASE: negative_equity
+RESULT: NOT_REJECTED
+
+CASE: negative_volume
+RESULT: NOT_REJECTED
+
+CASE: zero_price
+RESULT: NOT_REJECTED
+
+CASE: negative_price
+RESULT: NOT_REJECTED
+
+ADVERSARIAL_VALIDATION_FINISHED
+[PASS] 17_ADVERSARIAL_INPUT_VALIDATION
+
+============================================================
+TEST: 18_WEB_IMPORT_AND_ROUTES
+============================================================
+APP: <fastapi.applications.FastAPI object at 0x7fef02529a90>
+['GET', 'HEAD'] /openapi.json
+['GET', 'HEAD'] /docs
+['GET', 'HEAD'] /docs/oauth2-redirect
+['GET', 'HEAD'] /redoc
+['GET'] /
+['GET'] /api/health
+['GET'] /api/market
+['POST'] /api/analyze
+['POST'] /api/analyze/manual
+['GET'] /api/runs
+['GET'] /api/runs/{cycle_id}
+['POST'] /api/kill-switch/on
+['POST'] /api/kill-switch/off
+['GET'] /api/config
+['GET'] /api/llm/providers
+['POST'] /api/llm/select
+['POST'] /api/llm/test
+['GET'] /api/connectors
+['POST'] /api/connectors
+['POST'] /api/connectors/{name}/test
+['DELETE'] /api/connectors/{name}
+['GET'] /api/modules
+ROUTE_COUNT: 22
+WEB_ROUTES_OK
+[PASS] 18_WEB_IMPORT_AND_ROUTES
+
+============================================================
+TEST: 19_WEB_TESTCLIENT
+============================================================
+/ -> 200
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TEXTRADER X — Intelligence Control Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:roo
+/api/health -> 200
+{"status":"ok","service":"textrader-control-plane","version":"4.0.2","state":"IDLE","kill_switch":{"active":false,"reason":"","activated_at":null},"history_size":0}
+/api/runs -> 200
+{"runs":[]}
+/api/config -> 200
+{"risk":{"max_position_size":1000.0,"max_daily_loss":0.02,"max_drawdown":0.1,"exposure_limit":0.5,"leverage_limit":1.0,"require_stop_loss":true,"require_take_profit":true,"max_correlation":0.85,"max_portfolio_exposure":0.75,"trading_sessions":["00:00-23:59"],"kill_switch":false},"trader":{"mode":"paper","veto_window_seconds":120,"on_silence":"execute","max_reevaluate_cycles":3,"memory_manager_interval_seconds":7200,"llm_provider":"mock","broker":"mock","initial_equity":100000.0,"data_sources":["
+/api/llm/providers -> 200
+{"active":"mock","available":["anthropic","mock","ollama","openai"]}
+/api/connectors -> 200
+{}
+/api/modules -> 200
+{"modules":[{"id":"overview","label":"Overview","status":"active"},{"id":"cycle","label":"Run Cycle","status":"active"},{"id":"history","label":"History","status":"active"},{"id":"risk","label":"Risk & Kill-Switch","status":"active"},{"id":"llm","label":"LLM Provider","status":"active"},{"id":"connectors","label":"Source Connectors","status":"active"},{"id":"config","label":"Configuration","status":"active"},{"id":"backtesting","label":"Backtesting Lab","status":"reserved","note":"CLI backtest e
+/docs -> 200
+
+    <!DOCTYPE html>
+    <html>
+    <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
+    <link rel="shortcut icon" href="https://fastapi.tiangolo.com/img/favicon.png">
+    <title>TEXTRADER X Control Plane - Swagger UI</title>
+    </head>
+    <body>
+    <div id="swagger-ui">
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swag
+/openapi.json -> 200
+{"openapi":"3.1.0","info":{"title":"TEXTRADER X Control Plane","description":"Auditable admin/control plane for autonomous trading analysis.","version":"4.0.2"},"paths":{"/api/health":{"get":{"summary":"Health","operationId":"health_api_health_get","responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{}}}}}}},"/api/market":{"get":{"summary":"Market","operationId":"market_api_market_get","parameters":[{"name":"symbol","in":"query","required":false,"schem
+WEB_BASIC_ENDPOINTS_OK
+[PASS] 19_WEB_TESTCLIENT
+
+============================================================
+TEST: 20_WEB_ADVERSARIAL
+============================================================
+GET /api/market?symbol= -> 400
+{"detail":"symbol must match BASE/QUOTE format"}
+GET /api/market?symbol=INVALID -> 400
+{"detail":"symbol must match BASE/QUOTE format"}
+GET /api/market?symbol=../../etc/passwd -> 400
+{"detail":"symbol must match BASE/QUOTE format"}
+GET /api/runs?limit=-1 -> 200
+{"runs":[]}
+GET /api/runs?limit=999999999 -> 200
+{"runs":[]}
+POST /api/analyze -> 200
+{"cycle_id":"cyc_a1bb588011b1","initial":{"cycle_id":"cyc_a1bb588011b1","action":"WAIT","instrument":"UNKNOWN","rationale":"no market data","assumptions":["mock_llm_policy","no_look_ahead"],"evidence":["market_data","memory","user_config"],"ts":"2026-09-30T19:16:26.919508+00:00"},"failure":{"cycle_id":"cyc_a1bb588011b1","paths":[{"category":"wrong_prediction","description":"direction call may be wrong; no edge measurement available","severity":"med"},{"category":"logical_inconsistency","description":"assumptions exist but logical chain not explicitly justified","severity":"low"},{"category":"missing_data","description":"market_data section has missing bundles","severity":"blocking"},{"category":"invalid_assumption","description":"instrument UNKNOWN not in market data: set()","severity":"high"},{"category":"risk_violation","description":"Risk Engine check pending; cannot pre-judge numeric violations","severity":"low"},{"category":"contradictory_evidence","description":"insufficient evid
+POST /api/paper -> 404
+{"detail":"Not Found"}
+WEB_ADVERSARIAL_OK
+[PASS] 20_WEB_ADVERSARIAL
+
+============================================================
+TEST: 21_API_CONCURRENCY_100
+============================================================
+REQUESTS: 100
+ERRORS: 0
+API_CONCURRENCY_100_OK
+[PASS] 21_API_CONCURRENCY_100
+
+============================================================
+TEST: 22_PAPER_STRESS_100
+============================================================
+[1/100] cycle=cyc_3c1e754e9ffc state=IDLE decision=BUY errors=0
+[2/100] cycle=cyc_3333de586327 state=IDLE decision=WAIT errors=0
+[3/100] cycle=cyc_581fd4c31a7c state=IDLE decision=BUY errors=0
+[4/100] cycle=cyc_9e42ace4f15d state=IDLE decision=WAIT errors=0
+[5/100] cycle=cyc_0d8770558c06 state=IDLE decision=BUY errors=0
+[6/100] cycle=cyc_18aad0930040 state=IDLE decision=WAIT errors=0
+[7/100] cycle=cyc_a0fe31fc3b73 state=IDLE decision=BUY errors=0
+[8/100] cycle=cyc_fd8251a095d0 state=IDLE decision=WAIT errors=0
+[9/100] cycle=cyc_9b3ce52c4dbc state=IDLE decision=BUY errors=0
+[10/100] cycle=cyc_741f4a8ae12a state=IDLE decision=BUY errors=0
+[11/100] cycle=cyc_58481b354c83 state=IDLE decision=BUY errors=0
+[12/100] cycle=cyc_34c4044404e1 state=IDLE decision=WAIT errors=0
+[13/100] cycle=cyc_2cff278179d5 state=IDLE decision=BUY errors=0
+[14/100] cycle=cyc_317a10b9cbbd state=IDLE decision=BUY errors=0
+[15/100] cycle=cyc_562de4377b18 state=IDLE decision=BUY errors=0
+[16/100] cycle=cyc_b3ab8020b2ea state=IDLE decision=BUY errors=0
+[17/100] cycle=cyc_546b81cf00e2 state=IDLE decision=BUY errors=0
+[18/100] cycle=cyc_9ba3821965a3 state=IDLE decision=WAIT errors=0
+[19/100] cycle=cyc_bfe91a09607c state=IDLE decision=BUY errors=0
+[20/100] cycle=cyc_e98d4970d320 state=IDLE decision=BUY errors=0
+[21/100] cycle=cyc_009fa98242c7 state=IDLE decision=BUY errors=0
+[22/100] cycle=cyc_1ec6ac6565ce state=IDLE decision=WAIT errors=0
+[23/100] cycle=cyc_856aeb39eb3c state=IDLE decision=WAIT errors=0
+[24/100] cycle=cyc_7edeba0c8154 state=IDLE decision=WAIT errors=0
+[25/100] cycle=cyc_3ab7c6bd4602 state=IDLE decision=WAIT errors=0
+[26/100] cycle=cyc_e493015243a5 state=IDLE decision=WAIT errors=0
+[27/100] cycle=cyc_4902362e9747 state=IDLE decision=WAIT errors=0
+[28/100] cycle=cyc_a0e13f2b01fb state=IDLE decision=BUY errors=0
+[29/100] cycle=cyc_f5d923a073ca state=IDLE decision=WAIT errors=0
+[30/100] cycle=cyc_d433ba8c19a2 state=IDLE decision=BUY errors=0
+[31/100] cycle=cyc_8e1be1aab09a state=IDLE decision=BUY errors=0
+[32/100] cycle=cyc_a1bdcc3abda9 state=IDLE decision=BUY errors=0
+[33/100] cycle=cyc_711a9236365c state=IDLE decision=BUY errors=0
+[34/100] cycle=cyc_097db2f52591 state=IDLE decision=WAIT errors=0
+[35/100] cycle=cyc_e56a50fdd7ed state=IDLE decision=BUY errors=0
+[36/100] cycle=cyc_e70a39562e78 state=IDLE decision=BUY errors=0
+[37/100] cycle=cyc_1a4c1118d8fa state=IDLE decision=BUY errors=0
+[38/100] cycle=cyc_49afc55102c4 state=IDLE decision=WAIT errors=0
+[39/100] cycle=cyc_d368d28028ff state=IDLE decision=BUY errors=0
+[40/100] cycle=cyc_0e8596c05093 state=IDLE decision=WAIT errors=0
+[41/100] cycle=cyc_5d969c87e524 state=IDLE decision=WAIT errors=0
+[42/100] cycle=cyc_aa968b8d9ff6 state=IDLE decision=BUY errors=0
+[43/100] cycle=cyc_e5b3bba3f758 state=IDLE decision=BUY errors=0
+[44/100] cycle=cyc_f1eecd89e16b state=IDLE decision=WAIT errors=0
+[45/100] cycle=cyc_a5677857ca5b state=IDLE decision=WAIT errors=0
+[46/100] cycle=cyc_8b63bb7c0977 state=IDLE decision=WAIT errors=0
+[47/100] cycle=cyc_32d5e2f9f310 state=IDLE decision=BUY errors=0
+[48/100] cycle=cyc_d928ba34473c state=IDLE decision=WAIT errors=0
+[49/100] cycle=cyc_e13887115fa9 state=IDLE decision=BUY errors=0
+[50/100] cycle=cyc_43f322e3878d state=IDLE decision=WAIT errors=0
+[51/100] cycle=cyc_26c651d60cba state=IDLE decision=WAIT errors=0
+[52/100] cycle=cyc_b65c5f2cb5dc state=IDLE decision=WAIT errors=0
+[53/100] cycle=cyc_83b7eb95d65b state=IDLE decision=BUY errors=0
+[54/100] cycle=cyc_11152eeba841 state=IDLE decision=BUY errors=0
+[55/100] cycle=cyc_fd9af0240fb4 state=IDLE decision=WAIT errors=0
+[56/100] cycle=cyc_5225756908b2 state=IDLE decision=WAIT errors=0
+[57/100] cycle=cyc_f4e7358e64a6 state=IDLE decision=WAIT errors=0
+[58/100] cycle=cyc_fee4362c7ff0 state=IDLE decision=WAIT errors=0
+[59/100] cycle=cyc_7587c018bc34 state=IDLE decision=BUY errors=0
+[60/100] cycle=cyc_798742c95b28 state=IDLE decision=BUY errors=0
+[61/100] cycle=cyc_fa8adc7eb2dc state=IDLE decision=WAIT errors=0
+[62/100] cycle=cyc_dd2e4028956f state=IDLE decision=WAIT errors=0
+[63/100] cycle=cyc_9e78841d355d state=IDLE decision=WAIT errors=0
+[64/100] cycle=cyc_646766750a80 state=IDLE decision=WAIT errors=0
+[65/100] cycle=cyc_2eef56a399a1 state=IDLE decision=WAIT errors=0
+[66/100] cycle=cyc_21f01d2cb582 state=IDLE decision=BUY errors=0
+[67/100] cycle=cyc_fc53becfbecc state=IDLE decision=BUY errors=0
+[68/100] cycle=cyc_ada82100e236 state=IDLE decision=BUY errors=0
+[69/100] cycle=cyc_cc78d93409d9 state=IDLE decision=BUY errors=0
+[70/100] cycle=cyc_4349bf5cd7e8 state=IDLE decision=BUY errors=0
+[71/100] cycle=cyc_808e258f691e state=IDLE decision=WAIT errors=0
+[72/100] cycle=cyc_2a38759574fa state=IDLE decision=BUY errors=0
+[73/100] cycle=cyc_dd52ec82331f state=IDLE decision=BUY errors=0
+[74/100] cycle=cyc_ebfeffa683d0 state=IDLE decision=BUY errors=0
+[75/100] cycle=cyc_67b4baf7b051 state=IDLE decision=WAIT errors=0
+[76/100] cycle=cyc_fad1c2e7346a state=IDLE decision=WAIT errors=0
+[77/100] cycle=cyc_26c03fefae9a state=IDLE decision=BUY errors=0
+[78/100] cycle=cyc_90746f53ac27 state=IDLE decision=BUY errors=0
+[79/100] cycle=cyc_b8be2f95ed37 state=IDLE decision=BUY errors=0
+[80/100] cycle=cyc_975ffd6d767e state=IDLE decision=BUY errors=0
+[81/100] cycle=cyc_8e48dc6e3629 state=IDLE decision=BUY errors=0
+[82/100] cycle=cyc_bf1792a84b5b state=IDLE decision=BUY errors=0
+[83/100] cycle=cyc_8739072e8e03 state=IDLE decision=BUY errors=0
+[84/100] cycle=cyc_62fdf29e753f state=IDLE decision=BUY errors=0
+[85/100] cycle=cyc_b38b6273f0c4 state=IDLE decision=BUY errors=0
+[86/100] cycle=cyc_62a0a2ad3df9 state=IDLE decision=WAIT errors=0
+[87/100] cycle=cyc_1ad9fa647d1e state=IDLE decision=BUY errors=0
+[88/100] cycle=cyc_f43b642c458b state=IDLE decision=BUY errors=0
+[89/100] cycle=cyc_b73ae38b0307 state=IDLE decision=BUY errors=0
+[90/100] cycle=cyc_746c964445aa state=IDLE decision=BUY errors=0
+[91/100] cycle=cyc_4f5e28267177 state=IDLE decision=BUY errors=0
+[92/100] cycle=cyc_2850f82032fe state=IDLE decision=BUY errors=0
+[93/100] cycle=cyc_5e32533c171c state=IDLE decision=BUY errors=0
+[94/100] cycle=cyc_66072981d4e2 state=IDLE decision=BUY errors=0
+[95/100] cycle=cyc_a62b2810b213 state=IDLE decision=WAIT errors=0
+[96/100] cycle=cyc_b208c2d5ddbb state=IDLE decision=WAIT errors=0
+[97/100] cycle=cyc_c1fb68ac992e state=IDLE decision=BUY errors=0
+[98/100] cycle=cyc_0c2c105991d2 state=IDLE decision=WAIT errors=0
+[99/100] cycle=cyc_5d9adf9ddfc1 state=IDLE decision=WAIT errors=0
+[100/100] cycle=cyc_8d3ae05ddd2a state=IDLE decision=BUY errors=0
+[PASS] 22_PAPER_STRESS_100
+
+============================================================
+TEST: 23_REAL_BITGET_MARKET
+============================================================
+ERROR: market data request failed: <urlopen error [Errno -3] Temporary failure in name resolution>
+Hint: verify internet/DNS access and that the exchange endpoint is reachable.
+[FAIL] 23_REAL_BITGET_MARKET  exit=2
+
+============================================================
+TEST: 24_REAL_BITGET_ANALYZE
+============================================================
+{
+  "cycle_id": "cyc_39b60487a246",
+  "initial": {
+    "cycle_id": "cyc_39b60487a246",
+    "action": "WAIT",
+    "instrument": "UNKNOWN",
+    "rationale": "no market data",
+    "assumptions": [
+      "mock_llm_policy",
+      "no_look_ahead"
+    ],
+    "evidence": [
+      "market_data",
+      "memory",
+      "user_config"
+    ],
+    "ts": "2026-09-30T19:16:36.571015+00:00"
+  },
+  "failure": {
+    "cycle_id": "cyc_39b60487a246",
+    "paths": [
+      {
+        "category": "wrong_prediction",
+        "description": "direction call may be wrong; no edge measurement available",
+        "severity": "med"
+      },
+      {
+        "category": "logical_inconsistency",
+        "description": "assumptions exist but logical chain not explicitly justified",
+        "severity": "low"
+      },
+      {
+        "category": "missing_data",
+        "description": "market_data section has missing bundles",
+        "severity": "blocking"
+      },
+      {
+        "category": "invalid_assumption",
+        "description": "instrument UNKNOWN not in market data: set()",
+        "severity": "high"
+      },
+      {
+        "category": "risk_violation",
+        "description": "Risk Engine check pending; cannot pre-judge numeric violations",
+        "severity": "low"
+      },
+      {
+        "category": "contradictory_evidence",
+        "description": "insufficient evidence to compare",
+        "severity": "med"
+      },
+      {
+        "category": "tool_failure",
+        "description": "no agent-side tools invoked yet",
+        "severity": "low"
+      },
+      {
+        "category": "model_uncertainty",
+        "description": "no calibrated probability estimate attached to initial decision",
+        "severity": "med"
+      },
+      {
+        "category": "execution_impossibility",
+        "description": "no valid order book data; cannot assess liquidity",
+        "severity": "blocking"
+      }
+    ],
+    "ts": "2026-09-30T19:16:36.572252+00:00"
+  },
+  "final": {
+    "cycle_id": "cyc_39b60487a246",
+    "decision": "WAIT",
+    "overrode_initial": false,
+    "reason": "F3 missing_data blocking ⇒ WAIT until data restored",
+    "ts": "2026-09-30T19:16:36.573344+00:00"
+  },
+  "order": null,
+  "veto": null,
+  "risk": null,
+  "guard_passed": false,
+  "execution": null,
+  "final_state": "IDLE",
+  "reeval_count": 0,
+  "errors": []
+}
+[PASS] 24_REAL_BITGET_ANALYZE
+
+============================================================
+TEST: 25_REAL_BITGET_PAPER_20
+============================================================

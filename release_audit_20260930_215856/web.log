@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/trader/cli.py", line 313, in <module>
+    main()
+    ~~~~^^
+  File "/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/trader/cli.py", line 309, in main
+    raise SystemExit(args.func(args))
+                     ~~~~~~~~~^^^^^^
+  File "/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/trader/cli.py", line 301, in cmd_web
+    from trader.web.server import serve
+  File "/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/trader/web/server.py", line 15, in <module>
+    from fastapi import FastAPI, HTTPException
+ModuleNotFoundError: No module named 'fastapi'

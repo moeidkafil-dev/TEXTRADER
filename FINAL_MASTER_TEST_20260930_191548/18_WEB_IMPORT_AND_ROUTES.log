@@ -1,0 +1,25 @@
+APP: <fastapi.applications.FastAPI object at 0x7fef02529a90>
+['GET', 'HEAD'] /openapi.json
+['GET', 'HEAD'] /docs
+['GET', 'HEAD'] /docs/oauth2-redirect
+['GET', 'HEAD'] /redoc
+['GET'] /
+['GET'] /api/health
+['GET'] /api/market
+['POST'] /api/analyze
+['POST'] /api/analyze/manual
+['GET'] /api/runs
+['GET'] /api/runs/{cycle_id}
+['POST'] /api/kill-switch/on
+['POST'] /api/kill-switch/off
+['GET'] /api/config
+['GET'] /api/llm/providers
+['POST'] /api/llm/select
+['POST'] /api/llm/test
+['GET'] /api/connectors
+['POST'] /api/connectors
+['POST'] /api/connectors/{name}/test
+['DELETE'] /api/connectors/{name}
+['GET'] /api/modules
+ROUTE_COUNT: 22
+WEB_ROUTES_OK

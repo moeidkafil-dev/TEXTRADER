@@ -1,0 +1,8 @@
+{
+  "python": "3.13.5",
+  "config": "ok",
+  "mode": "paper",
+  "market_data": "mock",
+  "decision_only": false,
+  "db": "data/trader.db"
+}

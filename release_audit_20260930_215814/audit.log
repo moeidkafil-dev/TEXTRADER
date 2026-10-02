@@ -1,0 +1,103 @@
+============================================================
+TEXTRADER X 4.0.2 — FULL RELEASE AUDIT
+============================================================
+Project : /home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE
+Started : 2026-09-30 21:58:14
+Report  : /home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/release_audit_20260930_215814
+
+### ENVIRONMENT ###
+Python 3.13.12
+Linux kali 6.16.8+kali-amd64 #1 SMP PREEMPT_DYNAMIC Kali 6.16.8-1kali1 (2025-09-24) x86_64 GNU/Linux
+[PASS] curl available
+[PASS] unzip available
+
+### VIRTUAL ENVIRONMENT ###
+Creating .venv ...
+[PASS] virtual environment created
+
+============================================================
+CHECK: Python executable
+============================================================
+Python 3.13.12
+[PASS] Python executable
+
+============================================================
+CHECK: pip available
+============================================================
+pip 25.3 from /home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/.venv/lib/python3.13/site-packages/pip (python 3.13)
+[PASS] pip available
+
+============================================================
+CHECK: pip upgrade
+============================================================
+Requirement already satisfied: pip in ./.venv/lib/python3.13/site-packages (25.3)
+Collecting pip
+  Using cached pip-26.2.1-py3-none-any.whl.metadata (4.6 kB)
+Collecting setuptools
+  Using cached setuptools-84.0.0-py3-none-any.whl.metadata (6.6 kB)
+Collecting wheel
+  Using cached wheel-0.48.0-py3-none-any.whl.metadata (2.3 kB)
+Collecting packaging>=24.0 (from wheel)
+  Using cached packaging-26.3-py3-none-any.whl.metadata (3.5 kB)
+Using cached pip-26.2.1-py3-none-any.whl (1.8 MB)
+Using cached setuptools-84.0.0-py3-none-any.whl (818 kB)
+Using cached wheel-0.48.0-py3-none-any.whl (33 kB)
+Using cached packaging-26.3-py3-none-any.whl (129 kB)
+Installing collected packages: setuptools, pip, packaging, wheel
+  Attempting uninstall: pip
+    Found existing installation: pip 25.3
+    Uninstalling pip-25.3:
+      Successfully uninstalled pip-25.3
+ERROR: Operation cancelled by user
+
+[FAIL] pip upgrade
+
+### INSTALLATION ###
+
+============================================================
+CHECK: editable project installation
+============================================================
+WARNING: Ignoring invalid distribution ~ip (/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/.venv/lib/python3.13/site-packages)
+WARNING: Ignoring invalid distribution ~ip (/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/.venv/lib/python3.13/site-packages)
+Obtaining file:///home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'canceled'
+ERROR: Operation cancelled by user
+[FAIL] editable project installation
+
+============================================================
+CHECK: requirements installation
+============================================================
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/.venv/lib/python3.13/site-packages/pip/__main__.py", line 24, in <module>
+    sys.exit(_main())
+             ~~~~~^^
+  File "/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/.venv/lib/python3.13/site-packages/pip/_internal/cli/main.py", line 84, in main
+    command = create_command(cmd_name, isolated=("--isolated" in cmd_args))
+  File "/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/.venv/lib/python3.13/site-packages/pip/_internal/commands/__init__.py", line 121, in create_command
+    module = importlib.import_module(module_path)
+  File "/usr/lib/python3.13/importlib/__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 1023, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/.venv/lib/python3.13/site-packages/pip/_internal/commands/install.py", line 18, in <module>
+    from pip._vendor.requests.exceptions import InvalidProxyURL
+  File "/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/.venv/lib/python3.13/site-packages/pip/_vendor/requests/__init__.py", line 153, in <module>
+    from . import packages, utils
+  File "/home/moeid/Desktop/26/TEXTRADER_X_4.0.2_FINAL_READY_FOR_RELEASE/.venv/lib/python3.13/site-packages/pip/_vendor/requests/packages.py", line 13, in <module>
+    for mod in list(sys.modules):
+               ~~~~^^^^^^^^^^^^^
+KeyboardInterrupt

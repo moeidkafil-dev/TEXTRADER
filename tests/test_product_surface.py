@@ -50,3 +50,49 @@ def test_snapshot_discards_open_candle():
     snap = Fake().snapshot("BTC/USDT", "1m", 100)
     assert len(snap["klines"]) == 1
     assert snap["klines"][0][4] == "100"
+
+
+
+def test_binance_base_url_uses_environment(monkeypatch):
+    monkeypatch.setenv("BINANCE_BASE_URL", "https://data-api.binance.vision/")
+    client = BinanceMarketClient()
+    assert client.base_url == "https://data-api.binance.vision"
+    explicit = BinanceMarketClient("https://example.test/")
+    assert explicit.base_url == "https://example.test"
+
+
+def test_binance_public_source_network_failure_is_missing_not_exception():
+    from trader.market.binance import BinancePublicSource
+
+    class FailingClient:
+        def snapshot(self, symbol, interval, limit):
+            raise TimeoutError("upstream unavailable")
+
+    bundles = BinancePublicSource(["BTC/USDT"], client=FailingClient()).fetch("cycle")
+    assert len(bundles) == 2
+    assert {b.source for b in bundles} == {
+        "binance://rest/market", "binance://rest/orderbook"
+    }
+    assert all(b.quality == "missing" for b in bundles)
+    assert all(b.payload["instrument"] == "BTC/USDT" for b in bundles)
+    assert all("TimeoutError" in b.payload["error"] for b in bundles)
+
+
+def test_binance_public_source_empty_closed_klines_is_missing():
+    from trader.market.binance import BinancePublicSource
+
+    class EmptyBarsClient:
+        def snapshot(self, symbol, interval, limit):
+            return {
+                "ticker": {
+                    "lastPrice": "100", "bidPrice": "99", "askPrice": "101",
+                    "priceChangePercent": "1", "volume": "10",
+                },
+                "depth": {"bids": [["99", "1"]], "asks": [["101", "1"]]},
+                "klines": [],
+            }
+
+    bundles = BinancePublicSource(["BTC/USDT"], client=EmptyBarsClient()).fetch("cycle")
+    assert len(bundles) == 2
+    assert all(b.quality == "missing" for b in bundles)
+    assert all("ohlcv" not in b.payload for b in bundles)

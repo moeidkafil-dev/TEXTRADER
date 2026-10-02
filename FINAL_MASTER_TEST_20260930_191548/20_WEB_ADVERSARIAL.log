@@ -1,0 +1,15 @@
+GET /api/market?symbol= -> 400
+{"detail":"symbol must match BASE/QUOTE format"}
+GET /api/market?symbol=INVALID -> 400
+{"detail":"symbol must match BASE/QUOTE format"}
+GET /api/market?symbol=../../etc/passwd -> 400
+{"detail":"symbol must match BASE/QUOTE format"}
+GET /api/runs?limit=-1 -> 200
+{"runs":[]}
+GET /api/runs?limit=999999999 -> 200
+{"runs":[]}
+POST /api/analyze -> 200
+{"cycle_id":"cyc_a1bb588011b1","initial":{"cycle_id":"cyc_a1bb588011b1","action":"WAIT","instrument":"UNKNOWN","rationale":"no market data","assumptions":["mock_llm_policy","no_look_ahead"],"evidence":["market_data","memory","user_config"],"ts":"2026-09-30T19:16:26.919508+00:00"},"failure":{"cycle_id":"cyc_a1bb588011b1","paths":[{"category":"wrong_prediction","description":"direction call may be wrong; no edge measurement available","severity":"med"},{"category":"logical_inconsistency","description":"assumptions exist but logical chain not explicitly justified","severity":"low"},{"category":"missing_data","description":"market_data section has missing bundles","severity":"blocking"},{"category":"invalid_assumption","description":"instrument UNKNOWN not in market data: set()","severity":"high"},{"category":"risk_violation","description":"Risk Engine check pending; cannot pre-judge numeric violations","severity":"low"},{"category":"contradictory_evidence","description":"insufficient evid
+POST /api/paper -> 404
+{"detail":"Not Found"}
+WEB_ADVERSARIAL_OK

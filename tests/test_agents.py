@@ -75,6 +75,9 @@ def test_agent2_covers_all_9_categories(orchestrator):
     initial = orchestrator.agent1.run(ctx)
     report = orchestrator.agent2.run(ctx, initial)
     covered = {p.category for p in report.paths}
+    # A valid order book is explicitly analyzed by Agent2 as F9=low.
+    # The category must still be present because Agent2's contract requires
+    # all nine categories to be represented.
     expected = {c.value for c in FailureCategory.all()}
     assert covered == expected
 
